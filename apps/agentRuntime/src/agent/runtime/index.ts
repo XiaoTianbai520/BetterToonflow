@@ -5,25 +5,21 @@ import {
   createAgentSession,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext, QuestionContext } from "@toonflow/tools-scaffold/runtime";
+import type { CanvasContext, QuestionContext } from "@/tools/types";
 import type { AgentEvent, AgentMention, AgentToolCall } from "@/agent/runtime/types";
 import { agentMentionsSchema, mentionPrompt, snapshotMentions, validateMentionTokens } from "@/agent/runtime/mentions";
 import { readAiReferences, referenceContent } from "@/ai";
-import { createAgentTools } from "@/tools";
+import { createAgentTools, createSubAgentTool, createReportTool } from "@/tools";
 import { createAgentResources } from "@/agent/runtime/resources";
 import { createAgentModel } from "@/agent/runtime/model";
 import { configureAgentRequests } from "@/agent/runtime/requests";
 import { getAgentImageReference, getOffloadedImageText, readAgentImage } from "@/agent/runtime/imageAttachments";
-import { createSubAgentTool } from "@/tools/subAgent";
-import { createMemoryTool } from "@/tools/memory";
-import { createReportTool } from "@/tools/report";
 import { runDelegatedAgent } from "@/agent/runtime/delegation";
 import {
   agentAttachmentsSchema, getActiveAgentSession, getAgentStats, getParentSessionFile, getSubAgentInfo,
   getToolResultText, hasPendingAgentQuestion, registerAgentSession, updateSubAgent,
   type ActiveAgentSession,
 } from "@/agent/runtime/sessions";
-import { isMemoryEnabled } from "@/utils/personalization";
 import { lockWorkspaceFiles, resolveWorkspacePath } from "@/utils/workspace/files";
 import { t } from "@/lib/messages";
 import { decodeTextFile } from "@/lib/documentFormats";
@@ -138,16 +134,11 @@ export async function run(
     };
     unregister = registerAgentSession(history.getSessionFile()!, active);
     const tools = await createAgentTools(cwd, canvas, question);
-    if (isMemoryEnabled()) {
-      const memoryTool = createMemoryTool();
-      if (tools.some(tool => tool.name === memoryTool.name)) throw new Error("工具名称 memory 已被内置全局记忆工具占用");
-      tools.push(memoryTool);
-    }
     if (parentFile && child) {
       if (tools.some(tool => tool.name === "report")) throw new Error("工具名称 report 已被内置上报工具占用");
       tools.push(createReportTool(cwd, parentFile, file, child.name, send));
     }
-    tools.push(await createSubAgentTool({
+    if (!parentFile) tools.push(await createSubAgentTool({
       tools,
       runTask: (name, task, taskSignal, onProgress) => runDelegatedAgent({
         cwd, parentFile: file, name, task, providerId, modelId, thinkingLevel, canvas, signal: taskSignal, send, onProgress,

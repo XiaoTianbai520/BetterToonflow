@@ -2,7 +2,7 @@ import { t } from "@/lib/messages";
 import { existsSync, mkdir, readFile, realpath, stat } from "@toonflow/file";
 import { basename, dirname, join, relative, sep } from "node:path";
 import { loadSkills, parseFrontmatter } from "@earendil-works/pi-coding-agent";
-import type { SkillContext, SkillLocation, SkillScope } from "@toonflow/tools-scaffold/runtime";
+import type { SkillContext, SkillLocation, SkillScope } from "@/tools/types";
 import conf from "@/utils/conf";
 import { directory, isEnabled } from "@/utils/skills/files";
 import { isWithin, lockWorkspaceFiles, resolveWorkspacePath, writeWorkspaceFile } from "@/utils/workspace/files";
@@ -15,7 +15,7 @@ export function loadAgentSkills(cwd: string, scope?: SkillScope) {
     includeDefaults: false,
     // 同名技能由工作区优先，列表与运行时共用 SDK 的扫描规则。
     skillPaths: [
-      ...(scope !== "global" ? [join(cwd, "skill")] : []),
+      ...(scope !== "global" ? [join(cwd, ".agents", "skills")] : []),
       ...(scope !== "workspace" ? [join(dirname(conf.path), "skills")] : []),
     ].filter(existsSync),
   });
@@ -24,7 +24,7 @@ export function loadAgentSkills(cwd: string, scope?: SkillScope) {
 }
 
 export function createSkillContext(cwd: string): SkillContext {
-  const skillScope = (filePath: string): SkillScope => isWithin(join(cwd, "skill"), filePath) ? "workspace" : "global";
+  const skillScope = (filePath: string): SkillScope => isWithin(join(cwd, ".agents", "skills"), filePath) ? "workspace" : "global";
 
   async function locate(request: SkillLocation, create = false) {
     const scope = create ? request.scope ?? "workspace" : request.scope;
@@ -33,7 +33,7 @@ export function createSkillContext(cwd: string): SkillContext {
     if (!skill && (request.name.length > 64 || !/^[a-z][a-zA-Z0-9]*$/.test(request.name))) throw new Error("新技能名称必须为不超过 64 字符的小驼峰");
     const targetScope = scope ?? skillScope(skill!.filePath);
     const root = await realpath(targetScope === "workspace" ? cwd : dirname(conf.path));
-    const { path: scopeDirectory } = await resolveWorkspacePath(root, targetScope === "workspace" ? "skill" : "skills", true);
+    const { path: scopeDirectory } = await resolveWorkspacePath(root, targetScope === "workspace" ? ".agents/skills" : "skills", true);
     const baseDirectory = skill?.baseDir ?? join(scopeDirectory, request.name);
     if (!isWithin(scopeDirectory, baseDirectory)) throw new Error("技能目录超出指定范围");
     const { path: skillDirectory } = await resolveWorkspacePath(scopeDirectory, relative(scopeDirectory, baseDirectory), true);

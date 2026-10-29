@@ -1,5 +1,5 @@
-import { canvasOperations } from "@toonflow/tool-canvas/runtime";
-import type { CanvasInfo, CanvasContext } from "@toonflow/tools-scaffold/runtime";
+import { canvasOperations } from "@/tools/canvas/runtime";
+import type { CanvasInfo, CanvasContext } from "@/tools/types";
 import type { AgentEvent } from "@/agent/runtime/types";
 
 type CanvasResult = { result?: unknown; error?: string };
@@ -33,7 +33,7 @@ export function createCanvasContext(cwd: string, canvas: CanvasInfo, send: (even
             else resolve(result);
           };
           const abort = () => finish({ error: "画布调用已取消" });
-          const timer = setTimeout(() => finish({ error: "画布调用超时，请确认画布仍然打开" }), 120000);
+          const timer = setTimeout(() => finish({ error: "画布调用超时，请确认画布仍然打开" }), 300000);
           pendingCalls.set(callId, { cwd, finish });
           activeCalls.add(callId);
           signal?.addEventListener("abort", abort, { once: true });

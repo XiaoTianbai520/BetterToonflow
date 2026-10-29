@@ -8,13 +8,31 @@ import {
   defineTool, createReadToolDefinition, createWriteToolDefinition, createEditToolDefinition, createLsToolDefinition,
   detectSupportedImageMimeTypeFromFile, type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext, QuestionContext, ToolContext, ToolFiles } from "@toonflow/tools-scaffold/runtime";
+import type { CanvasContext, QuestionContext, ToolContext, ToolFiles } from "./types";
 import conf from "@/utils/conf";
 import { isWithin, resolveWorkspacePath, writeWorkspaceFile, renameWorkspaceFile, lockWorkspaceFiles, protectWorkspaceRoot } from "@/utils/workspace/files";
-import { listTools, loadTool, validateToolConfig } from "@/utils/plugins/tools";
+import askUser from "./askUser";
+import canvasTools from "./canvas";
+import mediaGeneration from "./mediaGeneration";
+import workspace from "./workspace";
+import assetOperator from "./assetOperator";
+import skillOperator from "./skillOperator";
+import ffmpeg from "./ffmpeg";
+import webSearch from "./webSearch";
+import webFetch from "./webFetch";
+import { createMemoryTool } from "./memory";
+import { isMemoryEnabled } from "@/utils/personalization";
+import { authorizeMediaGeneration } from "./mediaGeneration/authorization";
+import { createAuthorizedCanvas } from "./canvas/authorization";
 import { createSkillContext } from "@/agent/skills";
 import { createAssetContext } from "@/agent/assets";
 import { readDocument } from "@/utils/documents";
+
+export { createMemoryTool } from "./memory";
+export { createSubAgentTool } from "./subAgent";
+export { createReportTool } from "./report";
+
+const toolPackages = { askUser, canvas: canvasTools, mediaGeneration, workspace, assetOperator, skillOperator, ffmpeg, webSearch, webFetch };
 
 export function createAgentToolContext(cwd: string, config: Record<string, unknown> = {}, canvas?: CanvasContext, question?: QuestionContext, workspaceAvailable = true): ToolContext {
   const skillsDirectory = join(dirname(conf.path), "skills");
@@ -70,14 +88,23 @@ export function createAgentToolContext(cwd: string, config: Record<string, unkno
     }),
   };
   return {
-    cwd, config, files, resolvePath, writeFile: files.writeFile, canvas, question,
+    cwd, config, files, resolvePath, writeFile: files.writeFile, canvas: canvas ? createAuthorizedCanvas(cwd, canvas, question) : undefined, question,
     skills: workspaceAvailable ? createSkillContext(cwd) : undefined, assets: workspaceAvailable ? createAssetContext(cwd) : undefined,
     ffmpeg: signal => { requireWorkspace(); return createWorkspaceFfmpeg(cwd, signal); },
     media: workspaceAvailable ? {
       listModels: listMediaModels,
-      generateImage: (request, signal) => generateMedia(cwd, "image", request, signal),
-      generateVideo: (request, signal) => generateMedia(cwd, "video", request, signal),
-      generateAudio: (request, signal) => generateMedia(cwd, "audio", request, signal),
+      generateImage: async (request, signal, callId) => {
+        await authorizeMediaGeneration(cwd, question, callId, "image", request, signal);
+        return generateMedia(cwd, "image", request, signal);
+      },
+      generateVideo: async (request, signal, callId) => {
+        await authorizeMediaGeneration(cwd, question, callId, "video", request, signal);
+        return generateMedia(cwd, "video", request, signal);
+      },
+      generateAudio: async (request, signal, callId) => {
+        await authorizeMediaGeneration(cwd, question, callId, "audio", request, signal);
+        return generateMedia(cwd, "audio", request, signal);
+      },
     } : undefined,
     sdk: {
       defineTool, createWriteToolDefinition, createEditToolDefinition, createLsToolDefinition,
@@ -99,26 +126,18 @@ export function createAgentToolContext(cwd: string, config: Record<string, unkno
 }
 
 export async function createAgentTools(cwd: string, canvas?: CanvasContext, question?: QuestionContext): Promise<ToolDefinition[]> {
-  const tools: ToolDefinition[] = [];
-  const names = new Set<string>();
+  const tools: ToolDefinition[] = isMemoryEnabled() ? [createMemoryTool()] : [];
+  const names = new Set(tools.map(tool => tool.name));
   const context = createAgentToolContext(cwd, {}, canvas, question);
-  for (const item of await listTools()) {
-    if (!item.enabled) continue;
-    if (item.loadError) throw new Error(`${item.displayName}：${item.loadError}`);
-    const { plugin, metadata } = await loadTool(item.name);
-    const config = validateToolConfig(plugin, item.config);
-    const definitions = await plugin.createTools({ ...context, config });
+  const configurations = conf.get("toolConfigs", {});
+  for (const [name, toolPackage] of Object.entries(toolPackages)) {
+    const config = toolPackage.validateConfig(Object.hasOwn(configurations, name) ? configurations[name] : {});
+    const definitions = await toolPackage.createTools({ ...context, config });
     for (const tool of definitions) {
-      if (!tool.name || typeof tool.execute !== "function") throw new Error(t`${item.displayName} 返回了无效的工具`);
+      if (!tool.name || typeof tool.execute !== "function") throw new Error(t`${name} 返回了无效的工具`);
       if (names.has(tool.name)) throw new Error(t`工具名称重复：${tool.name}`);
       names.add(tool.name);
-      tools.push({
-        ...tool,
-        promptGuidelines: [
-          ...(metadata.prompt ? [metadata.prompt] : []),
-          ...(tool.promptGuidelines ?? []),
-        ],
-      });
+      tools.push(tool);
     }
   }
   return tools;

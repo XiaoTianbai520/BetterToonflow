@@ -6,7 +6,7 @@ const parameters = z.strictObject({
   tasks: z.array(z.strictObject({
     name: z.string().trim().min(1).max(80).describe("本次任务名称"),
     task: z.string().trim().min(1).max(24000).describe("完整任务、必要背景、相对路径、已获授权和预期交付；不继承主对话历史"),
-  })).min(1),
+  })).min(1).max(8),
 });
 
 export async function createSubAgentTool({ tools, runTask }: {
@@ -16,7 +16,7 @@ export async function createSubAgentTool({ tools, runTask }: {
   if (tools.some(tool => tool.name === "subAgent")) throw new Error("工具名称 subAgent 已被内置子任务工具占用");
   const subAgentTool: ToolDefinition = {
     name: "subAgent", label: "子任务",
-    description: `并行执行委派的独立任务，创建可继续对话的子 Agent，继承宿主工具，包括提问、继续委派和 report 上报。宿主工具：${[...tools.map(tool => tool.name), "subAgent"].join("、")}。任务数量、并发数、执行轮次和总时长不设固定上限，可由用户停止。`,
+    description: `同工作区委派独立子 Agent，每次最多 8 个任务，同工作区最多 4 个并发，其余排队。子 Agent 使用宿主工具、askUser 确认与 report 上报，不继续嵌套委派。宿主工具：${tools.map(tool => tool.name).join("、")}。`,
     promptSnippet: "按需使用 subAgent 委派独立工作。",
     promptGuidelines: [
       "简单任务直接完成；只委派相互独立的工作，提供必要背景和真实授权。并行任务不得修改同一文件或画布，依赖任务分次处理。",

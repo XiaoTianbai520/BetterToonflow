@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { QuestionAnswer, QuestionContext, QuestionRequest } from "@toonflow/tools-scaffold/runtime";
+import type { QuestionAnswer, QuestionContext, QuestionRequest } from "@/tools/types";
 import type { AgentEvent } from "@/agent/runtime/types";
 
 type PendingQuestion = { cwd: string; request: QuestionRequest; cancel(): void; finish(result: QuestionAnswer | Error): void };
@@ -27,7 +27,7 @@ export function createQuestionContext(cwd: string, send: (event: Extract<AgentEv
         pendingQuestions.set(callId, { cwd, request, finish, cancel() { onCancel?.(); abort(); } });
         activeQuestions.add(callId);
         signal?.addEventListener("abort", abort, { once: true });
-        try { send({ ...request, type: "question", toolCallId, callId }); }
+        try { send({ ...request, type: "question", toolCallId, callId, questions: [request] }); }
         catch (error) { finish(error instanceof Error ? error : new Error("发送提问失败")); }
       });
     },

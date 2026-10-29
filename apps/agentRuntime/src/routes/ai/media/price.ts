@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { audioGenerationSchema, imageGenerationSchema, videoGenerationSchema } from "@toonflow/tool-media-generation/runtime";
+import { audioGenerationSchema, imageGenerationSchema, videoGenerationSchema } from "@/tools/mediaGeneration/runtime";
 import { validateFields } from "@/lib/middleware";
 import { success, error } from "@/lib/responseFormat";
 import { translateMessage, validationOptions } from "@/lib/messages";

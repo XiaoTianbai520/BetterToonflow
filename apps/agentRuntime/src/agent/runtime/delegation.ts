@@ -1,6 +1,6 @@
 import { readFile } from "@toonflow/file";
 import { parseSessionEntries } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext } from "@toonflow/tools-scaffold/runtime";
+import type { CanvasContext } from "@/tools/types";
 import type { AgentEvent } from "@/agent/runtime/types";
 import { run } from "@/agent/runtime";
 import { createAgentConversation, getToolResultText, trackAgentEvent, updateSubAgent } from "@/agent/runtime/sessions";
@@ -9,12 +9,47 @@ import { createCanvasContext } from "@/agent/bridge/canvas";
 import { createQuestionContext } from "@/agent/bridge/question";
 import { resolveWorkspacePath } from "@/utils/workspace/files";
 import { translateError, translateMessage } from "@/lib/messages";
+import { resolve } from "node:path";
+
+const workspaceTasks = new Map<string, { active: number; waiting: Set<() => void> }>();
+
+async function acquireTask(cwd: string, signal?: AbortSignal) {
+  signal?.throwIfAborted();
+  const key = process.platform === "win32" ? resolve(cwd).toLowerCase() : resolve(cwd);
+  let pool = workspaceTasks.get(key);
+  if (!pool) { pool = { active: 0, waiting: new Set() }; workspaceTasks.set(key, pool); }
+  const current = pool;
+  if (current.active >= 4) await new Promise<void>((accept, reject) => {
+    const ready = () => { signal?.removeEventListener("abort", abort); accept(); };
+    const abort = () => {
+      current.waiting.delete(ready);
+      signal?.removeEventListener("abort", abort);
+      reject(signal?.reason);
+    };
+    current.waiting.add(ready);
+    signal?.addEventListener("abort", abort, { once: true });
+  });
+  else current.active++;
+  return () => {
+    const next = current.waiting.values().next().value;
+    if (next) { current.waiting.delete(next); next(); }
+    else if (--current.active === 0) workspaceTasks.delete(key);
+  };
+}
 
 export async function runDelegatedAgent(options: {
   cwd: string; parentFile: string; name: string; task: string;
   providerId: string; modelId: string; thinkingLevel: "off" | "low" | "medium" | "high";
   canvas?: CanvasContext; signal?: AbortSignal; send: (event: AgentEvent) => void; onProgress?: (text: string) => void;
 }) {
+  const release = await acquireTask(options.cwd, options.signal);
+  try {
+    options.signal?.throwIfAborted();
+    return await executeDelegatedAgent(options);
+  } finally { release(); }
+}
+
+async function executeDelegatedAgent(options: Parameters<typeof runDelegatedAgent>[0]) {
   const { cwd, parentFile, name, task, providerId, modelId, thinkingLevel, canvas, signal, onProgress } = options;
   const child = await createAgentConversation(cwd, { parentFile, name, task, providerId, modelId, thinkingLevel });
   const agent = { file: child.file, parentFile, name, task, providerId, modelId, thinkingLevel, status: "running" as const };

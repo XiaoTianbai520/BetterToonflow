@@ -1,7 +1,7 @@
 import type { Usage } from "@earendil-works/pi-ai";
 import { createAgentSession, SessionManager, SettingsManager } from "@earendil-works/pi-coding-agent";
 import type { AgentSession, CreateAgentSessionOptions, ToolDefinition } from "@earendil-works/pi-coding-agent";
-import type { ToolCall } from "@toonflow/tools-scaffold/runtime";
+import type { ToolCall } from "@/tools/types";
 import { createAgentResources } from "@/agent/runtime/resources";
 import { configureAgentRequests } from "@/agent/runtime/requests";
 

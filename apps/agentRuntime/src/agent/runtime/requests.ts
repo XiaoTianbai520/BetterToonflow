@@ -102,12 +102,14 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
           const index = branch.findIndex(entry => entry.id === entryId);
           return index >= 0 && branch.slice(index + 1).some(entry => entry.type === "message" && entry.message.role === "assistant");
         }
-        let networkRecoveries = 0;
+        const imageRounds = new Map<string, number>();
         for (;;) {
           options?.signal?.throwIfAborted();
           const imageQueue = new Map<string, AgentImageReference[]>();
           const messages: Message[] = [];
+          let round = 0;
           for (const [messageIndex, message] of context.messages.entries()) {
+            if (message.role === "user") round++;
             if (message.role === "assistant" || typeof message.content === "string") { messages.push(message); continue; }
             const content: (TextContent | ImageContent)[] = [];
             for (const [index, part] of message.content.entries()) {
@@ -128,6 +130,7 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
               }
               if (!reference) { content.push(part); continue; }
               references.set(reference.id, reference);
+              imageRounds.set(reference.id, round);
               if (offloaded.has(reference.id)) {
                 content.push({ type: "text", text: getOffloadedImageText(reference) });
                 continue;
@@ -158,17 +161,20 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
             const ids: string[] = [];
             let removed = 0;
             let removedCount = 0;
-            const sizes = new Map<string, { bytes: number; count: number }>();
+            const sizes = new Map<number | string, { ids: Set<string>; bytes: number; count: number }>();
             for (const image of activeImages) {
-              const previous = sizes.get(image.reference.id) ?? { bytes: 0, count: 0 };
-              sizes.set(image.reference.id, {
+              const key = imageRounds.get(image.reference.id) ?? image.reference.id;
+              const previous = sizes.get(key) ?? { ids: new Set<string>(), bytes: 0, count: 0 };
+              previous.ids.add(image.reference.id);
+              sizes.set(key, {
+                ids: previous.ids,
                 bytes: previous.bytes + (useFileBytes ? image.reference.bytes : image.file.inlineBytes),
                 count: previous.count + 1,
               });
             }
-            for (const [id, size] of sizes) {
-              if (offloaded.has(id) || !size.bytes) continue;
-              ids.push(id);
+            for (const size of sizes.values()) {
+              if (!size.bytes) continue;
+              ids.push(...[...size.ids].filter(id => !offloaded.has(id)));
               removed += size.bytes;
               removedCount += size.count;
               if (removed >= target && removedCount >= count) break;
@@ -211,6 +217,12 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
                   activeImages.push({ reference, file: image });
                 }
                 if (restart) throw rebuildRequest;
+                // 上传为文件 ID 只能缩小 JSON，不能绕过会话图片 20 MiB 的硬上限。
+                const historyImageBytes = activeImages.reduce((sum, image) => sum + image.reference.bytes, 0);
+                if (historyImageBytes > 20 * 1024 * 1024 && offloadBytes(historyImageBytes - 20 * 1024 * 1024, 0, true)) {
+                  restart = true;
+                  throw rebuildRequest;
+                }
                 try { await files.prepare(body); }
                 catch (error) {
                   // 文件 ID 只缩小 JSON；供应商仍限制图片总字节和张数，超限也按旧观察卸载。
@@ -264,10 +276,8 @@ export function configureAgentRequests(session: AgentSession, limits?: { maxRequ
             if (event.type === "error") {
               options?.signal?.throwIfAborted();
               if (fatalError) throw fatalError.error;
-              const imageBytes = activeImages.reduce((sum, image) => sum + image.file.inlineBytes, 0);
-              if (!visible && (restart || (http413 && networkRecoveries < 4
-                && offloadBytes(Math.max(1, networkRecoveries === 3 ? imageBytes : imageBytes / 2))))) {
-                if (http413) networkRecoveries++;
+              // 每次仅移出最旧轮次且严格减少图片，重建成功前不向前端发出 413 错误。
+              if (!visible && (restart || (http413 && offloadBytes(1, 0, true)))) {
                 retry = true;
                 break;
               }
