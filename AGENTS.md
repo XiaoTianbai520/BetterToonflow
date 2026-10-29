@@ -9,8 +9,9 @@
    - `apps/server`：JDK 21（开启虚拟线程）+ Spring Boot 3 + MyBatis-Plus + PostgreSQL 16 + Flyway 核心业务后端与对外唯一网关（监听端口 `3000`，直接实现 41 个接口，流式透传/协同转发 24 个接口至 `apps/agentRuntime`）。
    - `apps/agentRuntime`：Bun + TypeScript + Express + Pi Agent SDK 智能体与多模态媒体沙箱运行时（仅监听本机回环 `127.0.0.1:3001`，源码内聚 11 大 Agent 工具包与 `.ts` 媒体供应商 `node:vm` 沙箱，承载 24 个内部接口）。
 2. **权威基准约束**：
-   - 产品范围（6W 约束）、业务规则、数据库模型与架构边界严格遵循 PRD 基准文档 `newToonflowPrd.md`（`v1.0.0-baseline`）；
-   - 全量 65 个 API 的路径、HTTP 方法、服务归属、请求/响应 Schema、流式协议（SSE / NDJSON / 前导 `\n` 保活 Chunked JSON）、SHA-256 `revision` 乐观锁与错误码严格遵循接口契约 `apiContract.md`（`v1.0.0-baseline`）。
+   - **产品需求唯一基准**：`docs/newToonflowPrd.md`（`C:\Users\c1338\Desktop\workplace\toonflow\Toonflow-app\docs\newToonflowPrd.md`，`v1.0.0-baseline`）——产品范围（6W 约束）、业务规则、数据库模型与架构边界严格遵循该文档；
+   - **契约基准**：`docs/apiContract.md`（`C:\Users\c1338\Desktop\workplace\toonflow\Toonflow-app\docs\apiContract.md`，`v1.0.0-baseline`）——全量 65 个 API 的路径、HTTP 方法、服务归属、请求/响应 Schema、流式协议（SSE / NDJSON / 前导 `\n` 保活 Chunked JSON）、SHA-256 `revision` 乐观锁与错误码严格遵循该接口契约；
+   - **任务规划**：`docs/taskPlan.md`（`C:\Users\c1338\Desktop\workplace\toonflow\Toonflow-app\docs\taskPlan.md`）——全量分波次（Wave 1 ~ Wave 5）并行开发任务边界、独占文件归属（File Ownership）、要做什么/什么不能做及完成定义（DoD）严格按该规划推进；
    - 未经正式基准变更，不得擅自改变 API 契约、数据库表结构、业务规则、权限边界或事务行为，更不得恢复已明确排除的功能（如桌面壳 `desktop`、移动端 `mobile`/`ohos`、`mobileLink`、私有更新服务 `updateServer`、自有平台充值账本、`TF-Router`、`director3dNode`、`/api/singleAgent/*`、`/api/workspaces/files/reveal`、`MCP`、`A2A`、受控浏览器 `browser`、多国语言包 `i18n` 及外部 `.umd.js`/`.tool.js` 动态脚本体系）。
 
 ## 通用与前端 / TypeScript 代码风格要求
@@ -111,11 +112,11 @@ async function renameJsonFile(path: string, target: string) {
 
 > **适用范围**：`apps/server` 中的所有 Java 代码、Maven 配置及数据库迁移脚本。
 > **已锁定技术栈**：JDK 21（开启 Virtual Threads）、Spring Boot 3、MyBatis-Plus、PostgreSQL 16、Flyway、Maven。
-> **核心原则**：优先保持项目基准约定；未知事项先检查仓库与基准文档（`newToonflowPrd.md` / `apiContract.md`），无法确认时明确提问，不自行臆造。
+> **核心原则**：优先保持项目基准约定；未知事项先检查仓库与基准文档（产品需求唯一基准 `docs/newToonflowPrd.md`、契约基准 `docs/apiContract.md`、任务规划 `docs/taskPlan.md`），无法确认时明确提问，不自行臆造。
 
 ### 1. 总体要求
 
-1. 开始修改前，先阅读相关代码、构建文件（`pom.xml`）、配置（`application.yml`）及 `apiContract.md`，了解当前实现及调用关系。
+1. 开始修改前，先阅读相关代码、构建文件（`pom.xml`）、配置（`application.yml`）及 `docs/apiContract.md`、`docs/taskPlan.md`，了解当前实现及调用关系。
 2. 优先沿用项目已有的架构、命名、异常处理（`GlobalExceptionHandler`）、日志、DTO/VO、统一响应（`ApiResponse`）和格式化约定。
 3. 采用满足需求的最小改动；不要顺手重构无关代码，也不要引入不必要的抽象。
 4. 不得编造不存在的类、方法、配置项、依赖或 API。对不确定的行为，先查代码或依赖文档。
@@ -135,7 +136,7 @@ async function renameJsonFile(path: string, target: string) {
 7. 不要无理由捕获 `Exception` 或 `Throwable`，也不要捕获后忽略异常。仅在能够合理处理、补充上下文或转换异常时捕获。
 8. 不要为了消除编译或静态检查警告而添加无依据的 `@SuppressWarnings`；确需添加时说明原因并尽量缩小作用范围。
 9. 只有在项目已引入 Lombok 且遵循相关约定时才使用 Lombok；不要仅为少写几行代码新增依赖。
-10. 新增代码应避免空值处理不一致。遵循项目既有约定；不要在未确认语义时随意把 `null` 转成空字符串、零值或空集合（严格对齐 `apiContract.md` 中各字段的 `null` 或省略语义）。
+10. 新增代码应避免空值处理不一致。遵循项目既有约定；不要在未确认语义时随意把 `null` 转成空字符串、零值或空集合（严格对齐 `docs/apiContract.md` 中各字段的 `null` 或省略语义）。
 
 ### 3. Spring Boot 3 架构与分层约定
 
@@ -159,7 +160,7 @@ async function renameJsonFile(path: string, target: string) {
    ```
 2. 遵循上述分层与包结构，不擅自移动类或重构模块边界：`Controller` 负责请求接入、参数校验与协议转换，`Service` 负责业务逻辑与快照同步，`Mapper` 负责数据访问，`Proxy` 负责面向 Bun `agentRuntime` 的内部鉴权与无缓冲流式透传。
 3. 新增依赖注入时，优先使用构造器注入；如果项目已有统一且明确的注入约定，则保持一致。
-4. 请求参数校验应沿用项目统一方式，校验失败统一返回 HTTP `400 Bad Request` 及 `ApiResponse`（`code: 400`），与 `apiContract.md` 第 1.2 节错误码映射保持一致。
+4. 请求参数校验应沿用项目统一方式，校验失败统一返回 HTTP `400 Bad Request` 及 `ApiResponse`（`code: 400`），与 `docs/apiContract.md` 第 1.2 节错误码映射保持一致。
 5. 统一响应格式固定为 `ApiResponse<T>`（`{ code, data, message }`），不得擅自引入新的响应包装、异常体系、权限框架或全局拦截器。
 6. 仅在确有业务事务需求时使用 `@Transactional`，并明确事务边界、异常传播和回滚预期；不要机械地给所有 Service 方法添加事务。
 7. 配置项应放在 `application.yml` 及环境变量体系中（如 `TOONFLOW_DATA_DIR`、`TOONFLOW_INTERNAL_TOKEN`、`TOONFLOW_AGENT_RUNTIME_PORT`）。不要把密码、令牌、私钥或其他敏感值写入源码或日志。
@@ -198,7 +199,7 @@ async function renameJsonFile(path: string, target: string) {
 
 ### 6. 异常处理、日志与安全保护
 
-1. 复用项目统一的业务异常、错误码（`apiContract.md` 1.2 节）和 `GlobalExceptionHandler`。
+1. 复用项目统一的业务异常、错误码（`docs/apiContract.md` 1.2 节）和 `GlobalExceptionHandler`。
 2. 异常信息应提供足够的诊断上下文，但**严禁泄露** SQL 凭据、`TOONFLOW_INTERNAL_TOKEN`、上游模型 `apiKey`、密码或其他敏感信息。
 3. 不要吞掉异常，也不要在多个层级无意义地重复记录同一个异常。
 4. 使用 SLF4J 参数化日志写法，例如 `log.info("同步配置快照完成, file={}, revision={}", fileName, revision)`；**禁止使用 `System.out.println` 代替正式业务日志**。
@@ -210,7 +211,7 @@ async function renameJsonFile(path: string, target: string) {
 ### 7. AI 修改工作流与构建检查（Java）
 
 每项 Java 任务按以下 7 步流程进行：
-1. **理解需求**：确认目标、限制条件和验收标准；核对 `newToonflowPrd.md` 与 `apiContract.md`。
+1. **理解需求**：确认目标、限制条件和验收标准；核对 `docs/newToonflowPrd.md`、`docs/apiContract.md` 与 `docs/taskPlan.md`。
 2. **检查仓库**：阅读相关实现、调用方、`pom.xml` 和 `application.yml`；优先复用现有模式。
 3. **制定最小方案**：对较大或有风险的改动，先简要说明计划和影响范围。
 4. **实施修改**：只修改当前任务独占范围内的必要文件；保持命名、分层、异常处理和格式一致。
@@ -228,7 +229,7 @@ async function renameJsonFile(path: string, target: string) {
 
 - 使用 Bun、TypeScript、ES Modules、Express 和 Pi Agent SDK，沿用现有依赖与工具，不另建服务框架。
 - `src/index.ts` 是 `agentRuntime` 的启动入口，仅监听本机回环地址 `127.0.0.1:${TOONFLOW_AGENT_RUNTIME_PORT || 3001}`（严禁绑定 `0.0.0.0` 暴露公网）。
-- `src/app.ts` 的 `createApp(...)` 负责装配内部鉴权中间件（校验 `X-Toonflow-Internal-Token`）、路由和统一错误处理，仅承载 `apiContract.md` 第 3.5 节（10 个 `/api/agent/*` 接口）与第 3.6 节（14 个 `/api/ai/*`、`/api/providers/*` 接口）共 **24 个接口**。
+- `src/app.ts` 的 `createApp(...)` 负责装配内部鉴权中间件（校验 `X-Toonflow-Internal-Token`）、路由和统一错误处理，仅承载 `docs/apiContract.md` 第 3.5 节（10 个 `/api/agent/*` 接口）与第 3.6 节（14 个 `/api/ai/*`、`/api/providers/*` 接口）共 **24 个接口**。
 
 ### 目录结构与路由规则
 
