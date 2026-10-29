@@ -1,0 +1,30 @@
+server:
+  port: ${TOONFLOW_SERVER_PORT:3000}
+spring:
+  application:
+    name: toonflow-server
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${TOONFLOW_DB_URL:jdbc:postgresql://127.0.0.1:5432/toonflow}
+    username: ${TOONFLOW_DB_USERNAME:toonflow}
+    password: ${TOONFLOW_DB_PASSWORD:}
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+toonflow:
+  data-dir: ${TOONFLOW_DATA_DIR:../../data}
+  snapshot:
+    max-attempts: ${TOONFLOW_SNAPSHOT_MAX_ATTEMPTS:3}
+    initial-backoff-ms: ${TOONFLOW_SNAPSHOT_BACKOFF_MS:50}
+    recovery-delay-ms: ${TOONFLOW_SNAPSHOT_RECOVERY_DELAY_MS:5000}
+    reconciliation-delay-ms: ${TOONFLOW_SNAPSHOT_RECONCILIATION_DELAY_MS:60000}
