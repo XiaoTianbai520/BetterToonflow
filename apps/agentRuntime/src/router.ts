@@ -1,0 +1,53 @@
+import type { Express } from "express";
+
+import route1 from "./routes/agent/answer";
+import route2 from "./routes/agent/canvasResult";
+import route3 from "./routes/agent/create";
+import route4 from "./routes/agent/get";
+import route5 from "./routes/agent/index";
+import route6 from "./routes/agent/list";
+import route7 from "./routes/agent/mentionSource";
+import route8 from "./routes/agent/message";
+import route9 from "./routes/agent/rename";
+import route10 from "./routes/agent/skills";
+import route11 from "./routes/ai/generate";
+import route12 from "./routes/ai/media/balance";
+import route13 from "./routes/ai/media/balanceEvents";
+import route14 from "./routes/ai/media/generate";
+import route15 from "./routes/ai/media/models";
+import route16 from "./routes/ai/media/price";
+import route17 from "./routes/providers/debug/inspect";
+import route18 from "./routes/providers/debug/run";
+import route19 from "./routes/providers/media/add";
+import route20 from "./routes/providers/media/delete";
+import route21 from "./routes/providers/media/list";
+import route22 from "./routes/providers/media/models";
+import route23 from "./routes/providers/media/save";
+import route24 from "./routes/providers/media/validate";
+
+export default (app: Express) => {
+  app.use("/api/agent/answer", route1);
+  app.use("/api/agent/canvasResult", route2);
+  app.use("/api/agent/create", route3);
+  app.use("/api/agent/get", route4);
+  app.use("/api/agent", route5);
+  app.use("/api/agent/list", route6);
+  app.use("/api/agent/mentionSource", route7);
+  app.use("/api/agent/message", route8);
+  app.use("/api/agent/rename", route9);
+  app.use("/api/agent/skills", route10);
+  app.use("/api/ai/generate", route11);
+  app.use("/api/ai/media/balance", route12);
+  app.use("/api/ai/media/balanceEvents", route13);
+  app.use("/api/ai/media/generate", route14);
+  app.use("/api/ai/media/models", route15);
+  app.use("/api/ai/media/price", route16);
+  app.use("/api/providers/debug/inspect", route17);
+  app.use("/api/providers/debug/run", route18);
+  app.use("/api/providers/media/add", route19);
+  app.use("/api/providers/media/delete", route20);
+  app.use("/api/providers/media/list", route21);
+  app.use("/api/providers/media/models", route22);
+  app.use("/api/providers/media/save", route23);
+  app.use("/api/providers/media/validate", route24);
+}
