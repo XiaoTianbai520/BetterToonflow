@@ -1,8 +1,8 @@
 import axios from "axios";
 import { ElMessage } from "element-plus";
 import type { useVueFlow } from "@vue-flow/core";
-import { uploadNodeFile } from "@toonflow/nodes-scaffold/workspaceFiles";
-import type { NodeOutput } from "@toonflow/nodes-scaffold/values";
+import { uploadNodeFile } from "@/nodes/nodeCore/workspaceFiles";
+import type { NodeOutput } from "@/nodes/nodeCore/values";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 
 const assetDragType = "application/toonflow-asset";
@@ -103,8 +103,8 @@ export async function importCanvasFiles(droppedFiles: File[], position: { x: num
       const kind = mimeType.startsWith("image/") ? "image" : mimeType.startsWith("audio/") ? "audio" : mimeType.startsWith("video/") ? "video"
         : mimeType.startsWith("text/") || /^application\/(json|xml|javascript|x-ndjson)$/.test(mimeType) ? "text" : undefined;
       if (!kind) throw new Error(`${file.name}：该文件类型暂不支持导入画布`);
-      const type = `remote-${kind}Node`;
-      if (!availableNodes.some(node => node.type === type)) throw new Error(`${file.name}：请先安装并启用对应的基础节点`);
+      const type = `${kind}Node`;
+      if (!availableNodes.some(node => node.type === type)) throw new Error(`${file.name}：对应的内置节点不可用`);
       let output: NodeOutput | undefined;
       let textSnapshot: string | undefined;
       if (kind === "text") {

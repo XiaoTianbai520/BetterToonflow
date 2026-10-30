@@ -1,5 +1,5 @@
 import type { Connection, GraphEdge, GraphNode } from "@vue-flow/core";
-import { isTypeCompatible, validateConnection, type NodeHandle } from "@toonflow/nodes-scaffold/connection";
+import { isTypeCompatible, validateConnection, type NodeHandle } from "@/nodes/nodeCore/connection";
 
 export function getSelectionConnections(
   sources: GraphNode[],

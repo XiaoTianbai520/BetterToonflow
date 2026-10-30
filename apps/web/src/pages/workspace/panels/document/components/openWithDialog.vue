@@ -6,7 +6,7 @@
         <el-radio v-for="option in options" :key="option.id" :value="option.id" class="extensionOption" border>
           <span class="optionInfo">
             <span class="optionName">{{ option.displayName }}</span>
-            <span class="optionDetails">{{ option.id }}<span v-if="option.version"> · v{{ option.version }}</span></span>
+            <span class="optionDetails">{{ option.id }}</span>
           </span>
         </el-radio>
       </el-radio-group>
@@ -23,7 +23,7 @@
 import { onBeforeUnmount, ref, shallowRef } from "vue";
 import { ElButton, ElCheckbox, ElDialog, ElRadio, ElRadioGroup } from "element-plus";
 
-type ExtensionOption = { id: string; displayName: string; version: string };
+type ExtensionOption = { id: string; displayName: string };
 type ExtensionChoice = { id: string; makeDefault: boolean };
 const visible = ref(false);
 const resourceName = ref("");

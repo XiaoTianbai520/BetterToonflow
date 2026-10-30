@@ -20,7 +20,7 @@ import type { InputInstance } from "element-plus";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { isCanvasFile } from "@/pages/workspace/canvasFile";
 import { documentError } from "../documentSession";
-import { extensionIcon, listExtensions } from "../extensions";
+import { extensionIcon } from "../extensions";
 import type { TreeSelection } from "./fileTree.vue";
 
 type Entry = { key: string; path: string; selection: TreeSelection };
@@ -57,7 +57,6 @@ async function open() {
   const found: Entry[] = [];
   let visited = 0;
   try {
-    await listExtensions();
     // ACT: 按需扫描并限制 10000 个条目；更大项目可接服务端文件索引，不在浏览器保存全量索引。
     for (let index = 0; index < pending.length; index++) {
       request.signal.throwIfAborted();

@@ -8,9 +8,7 @@
         <el-button v-if="runtimeError || context.dirty || !session.component" text size="small" @click="retry">重试</el-button>
       </span>
     </div>
-    <div v-if="session.extensionChanged" class="extensionNotice" role="status">扩展已更新，关闭该扩展的所有标签后重新打开，以应用新版本。</div>
-    <div v-if="session.extensionDisabled" class="extensionNotice" role="status">扩展已停用。未保存内容仍保留，请重试保存、另存副本或重新启用扩展。</div>
-    <div v-loading="context.loading && !session.extensionDisabled" class="extContent" :inert="session.extensionDisabled">
+    <div v-loading="context.loading" class="extContent">
       <component v-if="session.component && !runtimeError" :is="session.component" :context="context" />
     </div>
   </section>
@@ -83,7 +81,6 @@ async function saveCopy() {
     overflow-wrap: anywhere;
     .errorActions { display: flex; flex-shrink: 0; flex-wrap: wrap; }
   }
-  .extensionNotice { padding: 6px 12px; color: var(--el-color-warning); font-size: 12px; }
   .extContent { flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
 }
 </style>

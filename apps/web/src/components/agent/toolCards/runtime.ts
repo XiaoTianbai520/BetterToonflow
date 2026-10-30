@@ -1,30 +1,16 @@
-export interface QuestionField {
-  field: string;
-  title: string;
-  type: "input" | "textarea" | "radio" | "checkbox" | "select" | "inputNumber" | "switch";
-  required?: boolean;
-  options?: string[];
-  placeholder?: string;
-}
+import type { AgentQuestionField, AgentQuestionRequest, AgentToolCall } from "../types";
 
-export interface QuestionRequest {
-  callId: string;
-  title: string;
-  question: string;
-  options?: string[];
-  fields?: QuestionField[];
-}
+// 工具卡片与 Agent 契约共用同一份提问/工具字段定义，不再各自复制一份。
+export type QuestionField = AgentQuestionField;
+export type QuestionRequest = AgentQuestionRequest & { callId: string };
 
-export interface ToolCall {
-  id: string;
-  name: string;
-  args?: Record<string, unknown>;
-  arguments?: Record<string, unknown>;
+// 卡片在流式过程中还会收到 streaming / completed 中间态，字段是 AgentToolCall 的浏览器侧超集。
+export type ToolCall = Omit<AgentToolCall, "status" | "question"> & {
   status: "streaming" | "running" | "success" | "completed" | "error" | "interrupted";
-  result?: string;
+  arguments?: Record<string, unknown>;
   content?: string;
   question?: QuestionRequest;
-}
+};
 
 export interface CanvasContext {
   getNodeLabel?(nodeId: string): string | undefined;

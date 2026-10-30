@@ -17,51 +17,50 @@
     @drop="dropFiles">
     <vue-flow
       :id="runtimeKey"
-      :only-render-visible-elements="false"
-      :nodes-draggable="true"
-      :node-types="nodeTypes"
-      :snap-to-grid="snapEnabled"
-      :snap-grid="[16, 16]"
-      :min-zoom="0.2"
-      :max-zoom="8"
-      :nodes-connectable="true"
-      :connection-mode="ConnectionMode.Strict"
-      :nodes-focusable="false"
-      :edges-focusable="false"
-      :edges-updatable="false"
-      :elevate-nodes-on-select="true"
-      :elevate-edges-on-select="false"
-      :disable-keyboard-a11y="true"
+      :onlyRenderVisibleElements="false"
+      :nodesDraggable="true"
+      :nodeTypes="nodeTypes"
+      :snapToGrid="snapEnabled"
+      :snapGrid="[16, 16]"
+      :minZoom="0.2"
+      :maxZoom="8"
+      :nodesConnectable="true"
+      :connectionMode="ConnectionMode.Strict"
+      :nodesFocusable="false"
+      :edgesFocusable="false"
+      :edgesUpdatable="false"
+      :elevateNodesOnSelect="true"
+      :elevateEdgesOnSelect="false"
+      :disableKeyboardA11y="true"
       :selectNodesOnDrag="false"
-      :auto-pan-on-node-drag="false"
-      :auto-pan-on-connect="false"
-      :zoom-on-double-click="false"
+      :autoPanOnNodeDrag="false"
+      :autoPanOnConnect="false"
+      :zoomOnDoubleClick="false"
       :zoomOnScroll="false"
       :zoomOnPinch="active && !settingsVisible"
       :panOnScroll="active && !settingsVisible && !defaultWheelZoom"
       :panOnScrollSpeed="1"
       :panOnDrag="handMode || isMobile ? true : defaultDragPan ? [0, 1] : [1]"
       :panOnScrollMode="PanOnScrollMode.Free"
-      :delete-key-code="null"
+      :deleteKeyCode="null"
       :selectionKeyCode="active && !settingsVisible && !handMode && !isMobile && selectionKeyPressed"
       :selectionMode="SelectionMode.Partial"
-      :multi-selection-key-code="null"
+      :multiSelectionKeyCode="null"
       :zoomActivationKeyCode="zoomKeyPressed ? true : null"
-      :pan-activation-key-code="null"
+      :panActivationKeyCode="null"
       v-model="flowData"
       @connect="addEdges"
       @edgeClick="showEdgeDisconnect"
       @paneClick="edgeDisconnect = undefined"
       @moveStart="edgeDisconnect = undefined"
-      :default-edge-options="defaultEdgeOptions">
+      :defaultEdgeOptions="defaultEdgeOptions">
       <template v-for="type in remoteNodeTypes" :key="type" #[`node-${type}`]="nodeProps">
         <remoteNode
           v-bind="nodeProps"
           :component="nodeTypes[type]"
-          :error="nodeErrors[type]"
-          :loading="nodeLoads.has(type) || (nodeListLoading && !nodeTypes[type] && !nodeErrors[type])" />
+          :error="nodeErrors[type]" />
       </template>
-      <background :gap="16" pattern-color="var(--el-border-color)" />
+      <background :gap="16" patternColor="var(--el-border-color)" />
       <canvasEmpty
         v-if="active && !settingsVisible && project?.directory && canvasReady && !flow.getNodes.value.length"
         :availableNodes="availableNodes"
@@ -128,12 +127,6 @@ import { ElMessage } from "element-plus";
 import { isMobile, isDesktop } from "@/lib/platform";
 import { storeToRefs } from "pinia";
 import { IconUnlink } from "@tabler/icons-vue";
-import * as vueRuntime from "vue";
-import * as vueFlowRuntime from "@vue-flow/core";
-import * as elementPlusRuntime from "element-plus";
-import * as threeRuntime from "three";
-import { runAgentLoop } from "@earendil-works/pi-agent-core";
-import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import "element-plus/dist/index.css";
 import {
   VueFlow,
@@ -152,8 +145,8 @@ import {
 } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { useCanvasTools } from "./useCanvasTools";
-import type { CanvasContext } from "@toonflow/tool-canvas/runtime";
-import { loadNodeComponent } from "./loadNodeComponent";
+import type { CanvasContext } from "./canvasSchemas";
+import { nodeDefinitions, defaultNodeMenu } from "@/nodes";
 import { useCanvasHistory } from "./useCanvasHistory";
 import { copyNodeToClipboard, copyNodesToClipboard, nodeClipboardCommand, readClipboardNodes } from "./nodeClipboard";
 import { readClipboardFiles, readClipboardText, writeClipboardImage } from "@/lib/clipboard";
@@ -167,11 +160,11 @@ import groupNode from "./components/groupNode.vue";
 import selectionToolbar from "./components/selectionToolbar.vue";
 import nodeSearch from "./components/nodeSearch.vue";
 import { finishGroupDrag, getSelectionTree } from "./selectionNodes";
-import type { NodeOutput } from "@toonflow/nodes-scaffold/values";
-import type { NodeConnectionFeedback, NodeHandle } from "@toonflow/nodes-scaffold/connection";
-import { useNodeEvent } from "@toonflow/nodes-scaffold/nodeEvent";
-import type { NodeDocumentContext, NodeDocumentState } from "@toonflow/nodes-scaffold/nodeDocument";
-import { useNodeToolsContext } from "@toonflow/nodes-scaffold/nodeTools";
+import type { NodeOutput } from "@/nodes/nodeCore/values";
+import type { NodeConnectionFeedback, NodeHandle } from "@/nodes/nodeCore/connection";
+import { useNodeEvent } from "@/nodes/nodeCore/nodeEvent";
+import type { NodeDocumentContext, NodeDocumentState } from "@/nodes/nodeCore/nodeDocument";
+import { useNodeToolsContext } from "@/nodes/nodeCore/nodeTools";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { generalSettings } from "@/stores/settings";
 import { getShortcutBindings, shortcutLabel, shortcutMatches, shortcutPressed } from "@/lib/canvasShortcuts";
@@ -201,18 +194,15 @@ const canvasMenuRef = ref<InstanceType<typeof canvasMenu>>();
 const canvasControlsRef = ref<InstanceType<typeof canvasControls>>();
 const selectionToolbarRef = ref<InstanceType<typeof selectionToolbar>>();
 const nodeSearchRef = ref<InstanceType<typeof nodeSearch>>();
-const nodeTypes = shallowRef<NodeTypesObject>({ canvasGroup: markRaw(groupNode) });
-const nodeConfigs = shallowRef<Record<string, Record<string, unknown>>>({});
-const nodeOptions = ref<{ type: string; label: string }[]>([]);
-const nodeLoads = shallowReactive(new Map<string, Promise<void>>());
-const nodeReloads = new Set<string>();
+// 旧画布的 remote- 类型仍映射到同一份内置组件，保存时不改写既有节点。
+const nodeTypes = shallowRef<NodeTypesObject>({
+  canvasGroup: markRaw(groupNode),
+  ...Object.fromEntries(Object.values(nodeDefinitions).flatMap(({ type, component }) => [[type, component], [`remote-${type}`, component]])),
+});
+const availableNodes = computed(() => defaultNodeMenu);
 const nodeErrors = ref<Record<string, string>>({});
-const availableNodes = computed(() => nodeOptions.value.filter(node => nodeTypes.value[node.type] && !nodeErrors.value[node.type]));
-const nodeListLoading = ref(true);
-const remoteNodeTypes = computed(() => [
-  ...new Set((flowData.value as { type?: string }[]).map((item) => item.type).filter((type): type is string => !!type?.startsWith("remote-"))),
-]);
-let loadRequest = 0;
+const remoteNodeTypes = computed(() => [...new Set((flowData.value as { type?: string }[])
+  .map(item => item.type).filter((type): type is string => !!type && type !== "canvasGroup"))]);
 const snapEnabled = ref(false);
 const zoomKeyPressed = ref(false);
 const panKeyPressed = ref(false);
@@ -287,7 +277,7 @@ const createCanvasContext = useCanvasTools({
 function getCanvasContext() {
   return canvasId.value || canvasMenuRef.value?.initialized ? createCanvasContext(canvasId.value, canvasController.signal, workspaceController.signal) : undefined;
 }
-const canvasReady = computed(() => !!canvasId.value && !nodeListLoading.value && nodeLoads.size === 0);
+const canvasReady = computed(() => !!canvasId.value);
 provide("canvas", getCanvasContext);
 defineExpose({ canvasId, canvasReady, getCanvasContext, addNodeAtPointer, readDocumentNode, saveDocumentNode, mountDocumentNode, observeDocumentNode, prepareCanvasDelete, flushSave: flushCanvasSave, cancelSave: cancelCanvasSave,
   getCanvases: (signal?: AbortSignal) => {
@@ -446,7 +436,7 @@ async function saveDocumentNode(directory: string, canvasPath: string, nodeId: s
       const currentText = output?.dataType === "STRING" && typeof output.value === "string" ? output.value : textPath === undefined ? "" : await files.readText(textPath);
       if (currentText !== expectedText) throw new Error("文档内容已变化，请重新读取后编辑");
     }
-    if (liveNode?.type === "remote-textNode") {
+    if (liveNode && ["textNode", "remote-textNode"].includes(liveNode.type)) {
       await getNodeTools().call({ nodeId, name: "node:setText", args: { text } }, canvasController.signal);
       checkDocumentDirectory(directory);
       // 节点工具已同步输出并排队保存；等待期间用户可能继续编辑，不能再写入旧文本快照。
@@ -1017,31 +1007,20 @@ function resetCanvasKeys() {
 
 watch([() => props.active, () => props.settingsVisible, () => generalSettings.value.canvasShortcuts], resetCanvasKeys, { deep: true, flush: "sync", immediate: true });
 
-function refreshInstalled(event: WindowEventMap["toonflow:plugin-installed"]) {
-  if (event.detail.type === "node") void loadRemoteNodes(event.detail.name);
-}
-
-const refreshNodeConfig = () => { void loadRemoteNodes(); };
-
 onMounted(() => {
   // 在捕获阶段同步修饰键，避免节点编辑器截断 keydown/keyup 后缩放状态丢失或卡住。
   window.addEventListener("keydown", updateCanvasKeys, true);
   window.addEventListener("keyup", updateCanvasKeys, true);
   window.addEventListener("blur", resetCanvasKeys);
-  window.addEventListener("toonflow:plugin-installed", refreshInstalled);
-  window.addEventListener("toonflow:node-config-updated", refreshNodeConfig);
   document.addEventListener("paste", pasteNode);
   document.addEventListener("copy", copyNode);
   document.addEventListener("beforecopy", beforeClipboard);
   document.addEventListener("beforepaste", beforeClipboard);
-  void loadRemoteNodes();
 });
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", updateCanvasKeys, true);
   window.removeEventListener("keyup", updateCanvasKeys, true);
   window.removeEventListener("blur", resetCanvasKeys);
-  window.removeEventListener("toonflow:plugin-installed", refreshInstalled);
-  window.removeEventListener("toonflow:node-config-updated", refreshNodeConfig);
   document.removeEventListener("paste", pasteNode);
   document.removeEventListener("copy", copyNode);
   document.removeEventListener("beforecopy", beforeClipboard);
@@ -1049,15 +1028,8 @@ onBeforeUnmount(() => {
   workspaceController.abort(new Error("工作区已关闭"));
   canvasController.abort(new Error("画布已关闭"));
   saveCanvas.flush();
-  loadRequest++;
 });
 
-const nodeWindow = window as typeof window & {
-  toonflowNodeHost?: { vue: typeof vueRuntime; vueFlow: typeof vueFlowRuntime; elementPlus: typeof elementPlusRuntime; three: typeof threeRuntime; ai: { runAgentLoop: typeof runAgentLoop; createAssistantMessageEventStream: typeof createAssistantMessageEventStream } };
-  toonflowNodes?: NodeTypesObject;
-};
-nodeWindow.toonflowNodeHost = { vue: vueRuntime, vueFlow: vueFlowRuntime, elementPlus: elementPlusRuntime, three: threeRuntime, ai: { runAgentLoop, createAssistantMessageEventStream } };
-provide("nodeConfig", (nodeType: string) => nodeConfigs.value[nodeType] ?? {});
 provide("workspaceFiles", () => {
   const directory = project.value?.directory;
   if (!directory) throw new Error("请先选择工作目录");
@@ -1068,101 +1040,6 @@ provide("workspaceDirectory", () => {
   if (!directory) throw new Error("请先选择工作目录");
   return directory;
 });
-provide("reloadRemoteNode", (type: string) => {
-  const name = type.replace(/^remote-/, "");
-  if (!type.startsWith("remote-") || !/^[a-z][a-zA-Z0-9]*$/.test(name)) throw new Error("节点类型无效");
-  return loadNode(name, `/api/nodes/files?name=${name}`, true);
-});
-
-async function loadNode(name: string, url: string, force = false): Promise<void> {
-  const nodeType = `remote-${name}`;
-  const signal = canvasController.signal;
-  const pending = nodeLoads.get(nodeType);
-  if (pending) {
-    if (!force) return pending;
-    await pending.catch(() => {});
-  }
-  if (!force && nodeTypes.value[nodeType] && !nodeErrors.value[nodeType]) return;
-  if (force) {
-    signal.throwIfAborted();
-    // ACT: 复用画布修订号收敛等待期间的编辑；持续修改画布时延后刷新，不额外维护节点修订状态。
-    let revision: number;
-    do {
-      revision = saveRevision;
-      await Promise.all(flow.getNodes.value.filter(node => node.type === nodeType).map(node => useNodeEvent(node.id, flow).emit("save", "reload")));
-      await nextTick();
-      signal.throwIfAborted();
-    } while (revision !== saveRevision);
-    const loading = nodeLoads.get(nodeType);
-    if (loading) return loading;
-  }
-  delete nodeErrors.value[nodeType];
-  const nodeLoad = loadNodeComponent(name, url, force)
-    .then((remoteNode) => {
-      // 同类型节点共享组件，运行错误由每个节点自己的边界显示。
-      nodeTypes.value = { ...nodeTypes.value, [nodeType]: markRaw(remoteNode) };
-    })
-    .catch((error) => {
-      nodeErrors.value[nodeType] = error instanceof Error ? error.message : String(error);
-      throw error;
-    })
-    .finally(() => nodeLoads.delete(nodeType));
-  nodeLoads.set(nodeType, nodeLoad);
-  return nodeLoad;
-}
-
-async function loadRemoteNodes(reloadName?: string) {
-  if (reloadName) nodeReloads.add(reloadName);
-  const requestId = ++loadRequest;
-  const signal = canvasController.signal;
-  nodeListLoading.value = true;
-  try {
-    const { data } = await axios.get<{ code: number; data: { name: string; displayName: string; url: string; enabled?: boolean; config?: Record<string, unknown> }[] }>(
-      "/api/nodes/get",
-      { headers: { "Cache-Control": "no-cache", "x-toonflow-workspace": "1" } }
-    );
-    if (requestId !== loadRequest) return;
-    if (data.code !== 200 || !Array.isArray(data.data)) throw new Error("节点列表格式错误");
-    const nodes = data.data.filter(node => {
-      if (!node || typeof node.name !== "string" || !/^[a-z][a-zA-Z0-9]*$/.test(node.name) || node.url !== `/api/nodes/files?name=${node.name}`) {
-        console.error("节点地址无效", node);
-        return false;
-      }
-      return true;
-    });
-    nodeConfigs.value = Object.fromEntries(nodes.map(node => [`remote-${node.name}`, node.config ?? {}]));
-    const enabledNodes = nodes.filter(node => node.enabled !== false);
-    // 节点各自加载完成后即可出现在菜单中，不等待其他节点的脚本。
-    nodeOptions.value = enabledNodes.map(node => ({ type: `remote-${node.name}`, label: node.displayName }))
-      .sort((left, right) => left.type.localeCompare(right.type));
-    // ACT: 安装事件合并到最新列表请求，避免连续更新不同节点时丢失较早的刷新名称。
-    const reloadNames = new Set(nodeReloads);
-    nodeReloads.clear();
-    await Promise.all(
-      enabledNodes.map(async (node) => {
-        const nodeType = `remote-${node.name}`;
-        try {
-          if (nodeTypes.value[nodeType] && !nodeErrors.value[nodeType] && !reloadNames.has(node.name)) return;
-          await loadNode(node.name, node.url, reloadNames.has(node.name));
-        } catch (error) {
-          console.error("加载远端节点失败", node, error);
-          // 保存拒绝时旧组件仍可用，不从节点菜单中移除；脚本加载错误仍排除。
-          if (nodeTypes.value[nodeType] && !nodeErrors.value[nodeType]) {
-            if (reloadNames.has(node.name) && !signal.aborted) ElMessage.warning({
-              message: `${node.displayName}已安装，但当前节点无法刷新。请等待任务结束后，点击节点右上角的刷新按钮。`,
-              grouping: true,
-            });
-          }
-        }
-      })
-    );
-  } catch (error) {
-    if (requestId === loadRequest) console.error("获取远端节点列表失败", error);
-  } finally {
-    if (requestId === loadRequest) nodeListLoading.value = false;
-  }
-}
-
 const defaultEdgeOptions = markRaw({
   type: "simple-bezier",
   animated: false,

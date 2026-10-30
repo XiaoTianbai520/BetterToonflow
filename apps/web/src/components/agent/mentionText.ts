@@ -1,4 +1,4 @@
-import type { AgentMention } from "@toonflow/server/agent/types";
+import type { AgentMention } from "./types";
 
 export function mentionName(mention: AgentMention) {
   return `${mention.source.kind === "asset" ? "全局素材" : mention.source.canvasName} / ${mention.label}`;

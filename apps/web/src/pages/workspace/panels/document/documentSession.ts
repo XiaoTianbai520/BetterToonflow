@@ -1,15 +1,14 @@
 import { markRaw, ref, shallowReactive, type Component } from "vue";
 import axios from "axios";
-import type { ExtContext, ExtDefinition, ExtResource } from "@toonflow/ext-scaffold/runtime";
+import type { ExtContext, ExtDefinition, ExtResource } from "@/extensions/runtime";
 import useWorkspaceFiles, { type TextSnapshot } from "@/lib/workspaceFiles";
 import { writeClipboardText } from "@/lib/clipboard";
 import { extensionConfig, saveExtensionConfig } from "./extensions";
-import { t } from "@toonflow/i18n/vue";
 
 type NodeState = { dirty: boolean; error: string; deleted: boolean };
 type NodeObserver = (onState: (state: NodeState) => void) => Promise<{ release(): void; flushSave(): Promise<void> }>;
 export function documentError(error: unknown) {
-  return axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : t`文档操作失败`;
+  return axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : `文档操作失败`;
 }
 
 export function createDocumentSession(resource: ExtResource, extension: ExtDefinition, mountNode: ExtContext["mountNode"], observeNode?: NodeObserver, onDeleted?: () => void, openFile?: ExtContext["openFile"]) {
@@ -24,11 +23,10 @@ export function createDocumentSession(resource: ExtResource, extension: ExtDefin
   let disk: TextSnapshot | undefined;
   let nodeLease: Awaited<ReturnType<NodeObserver>> | undefined;
   const loading = ref(true);
-  const extensionDisabled = ref(false);
   const locks = ref(0);
   const context = shallowReactive<ExtContext>({
     resource, files, text: "", error: "", dirty: false, active: true,
-    get loading() { return loading.value || locks.value > 0 || extensionDisabled.value; },
+    get loading() { return loading.value || locks.value > 0; },
     get config() { return extensionConfig(extension.id); },
     saveConfig: config => saveExtensionConfig(extension.id, config),
     writeClipboardText, mountNode,
@@ -92,9 +90,7 @@ export function createDocumentSession(resource: ExtResource, extension: ExtDefin
 
   const session = shallowReactive({
     context, extension, component: undefined as Component | undefined,
-    closing: false, handleId: "", conflict: false, extensionChanged: false,
-    get extensionDisabled() { return extensionDisabled.value; },
-    set extensionDisabled(value: boolean) { extensionDisabled.value = value; },
+    closing: false, handleId: "", conflict: false,
     ready: Promise.resolve(),
     lock() {
       locks.value++;

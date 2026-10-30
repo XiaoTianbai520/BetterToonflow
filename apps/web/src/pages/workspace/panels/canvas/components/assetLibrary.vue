@@ -89,7 +89,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import axios from "axios";
 import { ElMessage, ElTree, type InputInstance, type TreeNodeData } from "element-plus";
 import { IconChevronRight, IconDots, IconEye, IconFile, IconFolder, IconFolderOpen, IconFolderPlus, IconMusic, IconPhoto, IconSearch, IconVideo, IconX } from "@tabler/icons-vue";
-import type { NodeOutput } from "@toonflow/nodes-scaffold/values";
+import type { NodeOutput } from "@/nodes/nodeCore/values";
 import { startAssetDrag } from "../canvasDrop";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import assetMenu from "./assetMenu.vue";

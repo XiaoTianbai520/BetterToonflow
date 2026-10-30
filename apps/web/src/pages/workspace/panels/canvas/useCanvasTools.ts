@@ -1,7 +1,7 @@
 import { nextTick, watch, type Ref } from "vue";
 import { useVueFlow, type XYPosition } from "@vue-flow/core";
-import { useNodeEvent, useNodeToolsContext, validateConnection } from "@toonflow/nodes-scaffold/runtime";
-import { canvasSchemas, type CanvasContext, type CanvasToolCall } from "@toonflow/tool-canvas/runtime";
+import { useNodeEvent, useNodeToolsContext, validateConnection } from "@/nodes/nodeCore/runtime";
+import { canvasSchemas, type CanvasContext, type CanvasToolCall } from "./canvasSchemas";
 import { arrangeCanvas } from "./arrangeCanvas";
 import { canvasEdgeSummary, canvasNodeSummary, createCanvasQueries, isCanvasRead } from "./canvasQueries";
 

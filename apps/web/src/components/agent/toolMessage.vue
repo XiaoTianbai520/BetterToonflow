@@ -27,31 +27,20 @@
 
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, shallowRef, watch, type Component } from "vue";
-import { loadToolComponent } from "@toonflow/tools-scaffold/client";
+import { questionCard, nodeFocusCard } from "@/components/agent/toolCards";
 import { IconChevronDown, IconChevronRight, IconCopy, IconTool } from "@tabler/icons-vue";
 import chatReasoning from "@tdesign-vue-next/chat/es/chat-reasoning";
-import type { AgentToolCall } from "@toonflow/server/agent/types";
+import type { AgentToolCall } from "./types";
 import messageMarkdown from "@/components/messageMarkdown.vue";
 
 const { tool, directory, toolSessionId } = defineProps<{ tool: AgentToolCall; directory?: string; toolSessionId?: string }>();
 const emit = defineEmits<{ copy: [content: string] }>();
 const renderer = shallowRef<Component>();
 const rendererError = ref("");
-watch(() => [tool.name, tool.question?.callId] as const, async ([name], _previous, onCleanup) => {
-  let active = true;
-  onCleanup(() => { active = false; });
-  renderer.value = undefined;
+const canvasTools = new Set(["getCanvas", "findCanvasNodes", "getCanvasNodes", "getCanvasEdges", "getNodeTools", "addCanvas", "switchCanvas", "renameCanvas", "addNode", "deleteNodes", "moveNodes", "renameNodes", "connectNodes", "deleteEdges", "selectNodes", "arrangeCanvas", "fitCanvas", "nodeTools"]);
+watch(() => [tool.name, tool.question?.callId] as const, ([name]) => {
   rendererError.value = "";
-  if (name === "subAgent") return;
-  try {
-    const component = await loadToolComponent(name);
-    if (active) {
-      renderer.value = component;
-      if (!component && tool.status === "running" && tool.question?.callId) rendererError.value = "该工具未提供可用的交互组件";
-    }
-  } catch (error) {
-    if (active) rendererError.value = error instanceof Error ? error.message : String(error);
-  }
+  renderer.value = name === "askUser" ? questionCard : canvasTools.has(name) ? nodeFocusCard : undefined;
 }, { immediate: true });
 onErrorCaptured(error => {
   if (!renderer.value) return;

@@ -23,7 +23,7 @@
 import { computed, inject, onBeforeUnmount, ref, shallowRef, watchEffect, type ShallowRef } from "vue";
 import { getBezierPath, getRectOfNodes, Position, useVueFlow, type GraphNode } from "@vue-flow/core";
 import { IconCircleDashed } from "@tabler/icons-vue";
-import type { NodeConnectionFeedback, NodeHandle } from "@toonflow/nodes-scaffold/connection";
+import type { NodeConnectionFeedback, NodeHandle } from "@/nodes/nodeCore/connection";
 import { getSelectionConnections } from "../selectionConnections";
 import { getSelectionTree } from "../selectionNodes";
 

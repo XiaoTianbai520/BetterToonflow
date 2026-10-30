@@ -28,9 +28,9 @@ import { getNodeIcon } from "../loadNodeComponent";
 defineProps<{ availableNodes: { type: string }[] }>();
 const emit = defineEmits<{ create: [type: string] }>();
 const actions = [
-  { type: "remote-imageGenerationNode", label: "图片生成" },
-  { type: "remote-videoGenerationNode", label: "视频生成" },
-  { type: "remote-audioGenerationNode", label: "音频生成" },
+  { type: "imageGenerationNode", label: "图片生成" },
+  { type: "videoGenerationNode", label: "视频生成" },
+  { type: "audioGenerationNode", label: "音频生成" },
 ];
 </script>
 

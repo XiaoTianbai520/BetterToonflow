@@ -1,21 +1,17 @@
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import vue from "@vitejs/plugin-vue";
 import components from "unplugin-vue-components/vite";
 import { ElementPlusResolver } from "unplugin-vue-components/resolvers";
-import desktopConfig from "../../electrobun.config.ts";
 import postcssConfig from "../../postcss.config.ts";
-import { i18nPlugin } from "@toonflow/i18n/vite";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   css: { postcss: postcssConfig },
   define: {
-    "import.meta.env.appVersion": JSON.stringify(desktopConfig.app.version),
+    "import.meta.env.appVersion": JSON.stringify(loadEnv(mode, ".", "").appVersion ?? "2.0.0"),
   },
   server: {
     proxy: {
-      "/mcp": { target: "http://127.0.0.1:3000", changeOrigin: false },
-      "/a2a": { target: "http://127.0.0.1:3000", changeOrigin: false },
       "/api": {
         target: "http://127.0.0.1:3000",
         changeOrigin: false,
@@ -38,7 +34,6 @@ export default defineConfig({
     emptyOutDir: true,
   },
   plugins: [
-    i18nPlugin(),
     vue(),
     components({
       globsExclude: ["src/components/settings/panels/**/*Dialog.vue"],
@@ -51,4 +46,4 @@ export default defineConfig({
       ],
     }),
   ],
-});
+}));

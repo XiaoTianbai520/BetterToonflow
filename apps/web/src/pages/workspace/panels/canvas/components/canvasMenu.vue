@@ -81,7 +81,6 @@
 
 <script setup lang="ts">
 import axios from "axios";
-import { locale, translate } from "@toonflow/i18n/vue";
 import { computed, inject, nextTick, onBeforeUnmount, ref, shallowRef, watch, type ShallowRef } from "vue";
 import { Panel, useVueFlow, type FlowExportObject } from "@vue-flow/core";
 import { ElMessage, ElMessageBox, type DropdownInstance, type FilterNodeMethodFunction, type InputInstance, type LoadFunction, type TreeInstance } from "element-plus";
@@ -101,7 +100,7 @@ const props = defineProps<{
 const workspaceStore = useWorkspaceStore();
 const balanceVisible = ref(false);
 const rechargeVisible = ref(false);
-const balanceFormat = computed(() => new Intl.NumberFormat(locale.value, { maximumFractionDigits: 6 }));
+const balanceFormat = computed(() => new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 6 }));
 const workspaceName = computed(() => workspaceStore.project?.name || "未命名工作区");
 const projectNameDraft = ref("");
 watch([() => workspaceStore.project?.directory, workspaceName], () => {
@@ -125,7 +124,7 @@ watch(canvases, () => {
   if (boundCanvas.value) activeCanvasId.value = canvases.value.includes(boundCanvas.value) ? boundCanvas.value.id : "";
 }, { flush: "sync" });
 const canvasListVisible = ref(false);
-const activeCanvasName = computed(() => canvases.value.find(canvas => canvas.id === activeCanvasId.value)?.name || translate("选择画布"));
+const activeCanvasName = computed(() => canvases.value.find(canvas => canvas.id === activeCanvasId.value)?.name || "选择画布");
 const busy = ref(false);
 const initialized = ref(false);
 const loadError = ref("");
@@ -173,7 +172,7 @@ const treeEntries = computed(() => {
   if (folderDraft.value !== null) entries.unshift({ path: draftFolderPath, name: folderDraft.value, type: "directory", draft: true });
   return entries;
 });
-const moveFolders = computed(() => [{ path: "", label: translate("画布根目录") }, ...folders.value.map(folder => ({ path: folder.path, label: folder.path }))]);
+const moveFolders = computed(() => [{ path: "", label: "画布根目录" }, ...folders.value.map(folder => ({ path: folder.path, label: folder.path }))]);
 
 function parentPath(path: string) { return path.slice(0, path.lastIndexOf("/") + 1).replace(/\/$/, ""); }
 const filterEntry: FilterNodeMethodFunction = (query: string, entry) => !!entry.draft || String(entry.path).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
@@ -389,7 +388,7 @@ async function applyCanvas(canvasId: string, directory: string, signal?: AbortSi
     if (data?.toonflowCanvas !== true || !Array.isArray(data.nodes) || !Array.isArray(data.edges) || !data.viewport
       || ![data.viewport.x, data.viewport.y, data.viewport.zoom].every(Number.isFinite) || data.viewport.zoom <= 0) throw new Error("画布文件格式无效");
     // 旧画布可能保存了临时导出进度，重新打开时任务已不存在。
-    for (const node of data.nodes) if (node.type === "remote-videoNode" && node.data) delete node.data.exportProgress;
+    for (const node of data.nodes) if (["videoNode", "remote-videoNode"].includes(node.type ?? "") && node.data) delete node.data.exportProgress;
     nextCanvas.flow = { nodes: data.nodes, edges: data.edges, viewport: data.viewport };
   }
   await props.flushSave();

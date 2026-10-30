@@ -71,7 +71,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, shallowRef, type Component, type ComponentPublicInstance } from "vue";
 import { IconBox, IconChevronRight, IconFolder, IconFolderOpen, IconUpload } from "@tabler/icons-vue";
-import type { NodeMenuItem } from "@toonflow/server/nodeMenu";
+import type { NodeMenuItem } from "@/lib/nodeMenu";
 
 const props = withDefaults(defineProps<{
   items: NodeMenuItem[];

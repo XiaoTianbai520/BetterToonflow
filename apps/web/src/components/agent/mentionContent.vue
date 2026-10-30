@@ -21,7 +21,7 @@
 import { computed, ref, watch } from "vue";
 import axios from "axios";
 import { IconAt, IconFile } from "@tabler/icons-vue";
-import type { AgentMention } from "@toonflow/server/agent/types";
+import type { AgentMention } from "./types";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { mentionName, mentionParts, mentionThumbnailProps } from "./mentionText";
 import mentionThumbnail from "./mentionThumbnail.vue";

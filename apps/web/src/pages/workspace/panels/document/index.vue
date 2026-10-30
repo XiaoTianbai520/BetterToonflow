@@ -11,7 +11,7 @@
 import { onActivated, onBeforeUnmount, onDeactivated, ref, shallowReactive, shallowRef, watch } from "vue";
 import { DockviewVue, type DockviewApi, type DockviewReadyEvent } from "dockview-vue";
 import { ElMessage } from "element-plus";
-import type { ExtResource } from "@toonflow/ext-scaffold/runtime";
+import type { ExtResource } from "@/extensions/runtime";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { settings, settingsStorage } from "@/stores/settings";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
@@ -25,8 +25,7 @@ import workspaceSearch from "./components/workspaceSearch.vue";
 import editorHost from "./editorHost.vue";
 import { createDocumentSession, documentError, type DocumentSession, type EditorParams, type EditorView, type TabAction } from "./documentSession";
 import { theme } from "./theme";
-import { locale, t } from "@toonflow/i18n/vue";
-import { extensionCandidates, extensionRevision, listExtensions, resolveExtension } from "./extensions";
+import { extensionCandidates, resolveExtension } from "./extensions";
 import "dockview-vue/dist/styles/dockview.css";
 
 defineOptions({ components: { fileTree, editorHost } });
@@ -72,7 +71,6 @@ const layoutKey = `toonflow:documentLayout:${directory}`;
 type SavedTab = { id?: string; preview?: boolean; selection: TreeSelection; extensionId: string };
 type SavedLayout = { layout: ReturnType<DockviewApi["toJSON"]>; tabs: SavedTab[]; treeWidth: number };
 const closedTabs: SavedTab[] = [];
-const extensionVersions = new Map<string, string | undefined>();
 let savedLayout: SavedLayout | undefined;
 try { savedLayout = JSON.parse(settingsStorage.getItem(layoutKey) ?? "null") ?? undefined; } catch { /* 旧布局损坏时从空工作区开始。 */ }
 if (savedLayout?.treeWidth && Number.isFinite(savedLayout.treeWidth)) treeWidth = Math.max(180, Math.min(600, savedLayout.treeWidth));
@@ -85,11 +83,9 @@ function updateTabDescriptions() {
   for (const [id, session] of sessions) {
     const resource = session.context.resource;
     const duplicate = uniqueSessions().some(other => other !== session && other.context.resource.label === resource.label);
-    views.get(id)!.description = duplicate ? (resource.kind === "canvasNode" ? resource.path : resource.path.split("/").slice(0, -1).join("/") || t`工作区`) : "";
+    views.get(id)!.description = duplicate ? (resource.kind === "canvasNode" ? resource.path : resource.path.split("/").slice(0, -1).join("/") || `工作区`) : "";
   }
 }
-
-watch(locale, updateTabDescriptions);
 
 function keepOpen(id: string) {
   const view = views.get(id);
@@ -147,7 +143,7 @@ async function restoreLayout() {
 
 async function chooseExtension(resource: ExtResource, force: boolean) {
   const options = await extensionCandidates(resource);
-  if (!options.length) throw new Error(`尚未启用支持此文件的扩展，请到插件市场安装或启用：${resource.label}`);
+  if (!options.length) throw new Error(`没有支持此资源的内置扩展：${resource.label}`);
   const key = resource.kind === "canvasNode" ? "canvasNode" : resource.path.split(".").at(-1)!.toLowerCase();
   const associations = settings.value.documentExtensions as Record<string, string> | undefined;
   const defaultId = options.find(option => option.id === associations?.[key])?.id;
@@ -202,7 +198,6 @@ function onEditorReady({ api }: DockviewReadyEvent) {
     const session = sessions.get(panel.id);
     sessions.delete(panel.id);
     views.delete(panel.id);
-    extensionVersions.delete(panel.id);
     if (session && !uniqueSessions().includes(session)) {
       session.cancelSave();
       sessionWatchers.get(session)?.();
@@ -266,7 +261,6 @@ async function openSelectionNow(selection: TreeSelection, signal: AbortSignal, f
     if (preview && request !== openRevision) return;
     if (restoredId && !sessions.has(restoredId) && resource.kind === "file") {
       addView(restoredId, match![1], preview);
-      extensionVersions.set(restoredId, extensionVersions.get(match![0]));
       return match![1];
     }
     existing.api.setActive();
@@ -280,9 +274,6 @@ async function openSelectionNow(selection: TreeSelection, signal: AbortSignal, f
   signal.throwIfAborted();
   if (!extension) return;
   if (preview && request !== openRevision) return;
-  const olderSession = [...sessions.values()].find(session => session.extension.id === extension!.id && session.extensionChanged && session.component);
-  // 同一扩展的旧标签仍打开时共用旧组件，避免新版样式提前替换旧编辑器的样式。
-  if (olderSession) extension = { ...olderSession.extension, load: async () => ({ default: olderSession.component! }) };
   if (changingFiles || revision !== fileRevision) throw new Error("文件已变更，请重新打开");
   // 等待选择期间可能已从其他入口打开同一文件。
   const concurrent = [...sessions].find(([, session]) => session.context.resource.kind === resource.kind
@@ -321,8 +312,6 @@ async function openSelectionNow(selection: TreeSelection, signal: AbortSignal, f
       refreshFileTree();
     });
   session.context.active = active.value;
-  session.extensionChanged = !!olderSession;
-  extensionVersions.set(id, olderSession ? "pending-update" : extensionRevision(extension.id));
   try {
     addView(id, session, preview);
     sessionWatchers.set(session, watch(() => session.context.dirty, dirty => {
@@ -373,7 +362,6 @@ async function tabAction(id: string, action: TabAction) {
     } else {
       const viewId = `${id}:${crypto.randomUUID()}`;
       addView(viewId, session, false, { referencePanel: id, direction: action === "splitRight" ? "right" : "below" });
-      extensionVersions.set(viewId, extensionVersions.get(id));
     }
     return;
   }
@@ -500,22 +488,6 @@ async function replaceSearchFile(path: string, expectedText: string, nextText: s
   } finally { changingFiles = false; }
 }
 
-async function refreshExtensions() {
-  try {
-    const enabled = new Set((await listExtensions()).filter(extension => extension.enabled).map(extension => extension.id));
-    for (const [id, session] of [...sessions]) {
-      if (!enabled.has(session.extension.id)) {
-        session.extensionDisabled = true;
-        try { await closeEditor(id); }
-        catch (error) { session.context.error = `扩展已停用；为保留未保存内容，此标签仍保持打开。${documentError(error)}`; reportError(error); }
-      } else {
-        session.extensionDisabled = false;
-        if (extensionVersions.get(id) !== extensionRevision(session.extension.id)) session.extensionChanged = true;
-      }
-    }
-  } catch (error) { reportError(error); }
-}
-
 async function executeFileAction(action: FileAction, item: FileTreeItem, target?: string) {
   if (!directory || workspace.project?.directory !== directory) throw new Error("工作目录已切换");
   if (action === "openWith") {
@@ -523,7 +495,6 @@ async function executeFileAction(action: FileAction, item: FileTreeItem, target?
     return;
   }
   const files = useWorkspaceFiles(directory);
-  if (action === "reveal") return files.reveal(item.path);
   if (action === "create") return files.write(item.path, "", true);
   if (action === "mkdir") return files.mkdir(item.path);
   if (changingFiles) throw new Error("文件操作尚未完成，请稍后再试");
@@ -589,7 +560,6 @@ async function performFileAction(currentDirectory: string, action: "copy" | "ren
   await executeFileAction(action, { key: path, path, name: path.split(/[\\/]/).at(-1)!, type: entryType }, target);
   refreshFileTree();
 }
-window.addEventListener("toonflow:ext-updated", refreshExtensions);
 function beforeUnload(event: BeforeUnloadEvent) {
   saveLayout();
   if (![...sessions.values()].some(session => session.context.dirty)) return;
@@ -649,7 +619,6 @@ window.addEventListener("keydown", onDocumentKeydown, true);
 onActivated(() => { active.value = true; for (const session of uniqueSessions()) session.context.active = true; refreshDocuments(true); refreshFileTree(); });
 onDeactivated(() => { active.value = false; refreshQueue.clear(); visibleSessions.clear(); for (const session of uniqueSessions()) session.context.active = false; });
 onBeforeUnmount(() => {
-  window.removeEventListener("toonflow:ext-updated", refreshExtensions);
   window.removeEventListener("beforeunload", beforeUnload);
   window.removeEventListener("focus", onWindowFocus);
   window.removeEventListener("keydown", onDocumentKeydown, true);

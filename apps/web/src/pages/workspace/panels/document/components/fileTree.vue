@@ -64,7 +64,6 @@
           <template v-if="menuItem.type !== 'node'">
             <el-dropdown-item command="newFile" :disabled="busy">新建文件…</el-dropdown-item>
             <el-dropdown-item command="newFolder" :disabled="busy">新建文件夹…</el-dropdown-item>
-            <el-dropdown-item v-if="!isMobile && !isRemoteConnection" command="reveal" :disabled="busy">以资源管理器打开</el-dropdown-item>
             <el-dropdown-item command="copy" :disabled="busy || !menuItem.path" divided>复制</el-dropdown-item>
             <el-dropdown-item command="cut" :disabled="busy || !menuItem.path">剪切</el-dropdown-item>
             <el-dropdown-item command="paste" :disabled="busy || !clipboard?.items.length">粘贴</el-dropdown-item>
@@ -91,16 +90,15 @@ import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { settingsStorage } from "@/stores/settings";
 import { writeClipboardText } from "@/lib/clipboard";
 import { isMobile, isRemoteConnection } from "@/lib/platform";
-import { t } from "@toonflow/i18n/vue";
 import { isCanvasFile } from "@/pages/workspace/canvasFile";
-import { extensionCandidates, extensionIcon, listExtensions } from "../extensions";
+import { extensionCandidates, extensionIcon } from "../extensions";
 import { getNodeIcon } from "../../canvas/loadNodeComponent";
 import type { DocumentNode, DocumentNodeOptions } from "../../canvas/canvasFiles";
 
 type CanvasNodeSelection = { canvasPath: string; nodeId: string; label: string };
 type FileSelection = { filePath: string; label: string };
 export type TreeSelection = CanvasNodeSelection | FileSelection;
-export type FileAction = "copy" | "rename" | "move" | "delete" | "reveal" | "create" | "mkdir" | "openWith";
+export type FileAction = "copy" | "rename" | "move" | "delete" | "create" | "mkdir" | "openWith";
 export type FileTreeItem = {
   key: string;
   name: string;
@@ -344,7 +342,6 @@ function itemTitle(item: FileTreeItem) {
   return item.displayLabel ? `${item.displayLabel}\nID: ${item.nodeId}\n${item.path}\n${item.nodeLocations?.join("\n") ?? ""}`
     : item.type === "node" ? `${item.name}\nID: ${item.nodeId}\n${item.path}` : searchTerm.value.trim() ? item.path : item.name;
 }
-onMounted(() => { void listExtensions().catch(showActionError); });
 
 async function openMenu(event: Event, item: FileTreeItem) {
   event.preventDefault();
@@ -499,7 +496,7 @@ async function handleCommand(command: string, item = menuItem.value, source = cl
       const items = item.type === "node" ? [item] : selectedItems(item);
       if (!items.length) return;
       total = items.length;
-      const detail = item.type === "node" ? t`该节点会从画布中删除。` : items.some(item => item.type === "directory" || item.type === "canvas") ? t`所选文件夹的全部内容、画布的全部节点会一并删除。` : "";
+      const detail = item.type === "node" ? `该节点会从画布中删除。` : items.some(item => item.type === "directory" || item.type === "canvas") ? `所选文件夹的全部内容、画布的全部节点会一并删除。` : "";
       await ElMessageBox.confirm(`删除${items.length === 1 ? `“${items[0]!.name}”` : `这 ${items.length} 项`}？${detail}此操作不可恢复。`, item.type === "node" ? "删除节点" : "删除文件", { type: "warning", confirmButtonText: "删除", cancelButtonText: "取消", closeOnClickModal: false });
       if (currentDirectory !== directory.value) return;
       for (const entry of items) {
@@ -510,7 +507,7 @@ async function handleCommand(command: string, item = menuItem.value, source = cl
         changed = true;
       }
       clipboard.value = undefined;
-    } else if (command === "reveal" || command === "openWith") {
+    } else if (command === "openWith") {
       await executeFileAction(command, item);
       return;
     } else return;

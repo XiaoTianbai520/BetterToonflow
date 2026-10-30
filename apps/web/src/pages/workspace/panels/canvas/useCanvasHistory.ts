@@ -1,7 +1,7 @@
 import { computed, nextTick, onScopeDispose, ref, shallowRef, watch } from "vue";
 import { debounce } from "lodash-es";
 import { useVueFlow, type Node, type Edge } from "@vue-flow/core";
-import { useNodeEvent } from "@toonflow/nodes-scaffold/nodeEvent";
+import { useNodeEvent } from "@/nodes/nodeCore/nodeEvent";
 
 type CanvasSnapshot = { nodes: Node[]; edges: Edge[]; key: string };
 

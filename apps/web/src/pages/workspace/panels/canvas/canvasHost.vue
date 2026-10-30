@@ -21,13 +21,13 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onScopeDispose, provide, shallowReactive, shallowRef, ref, watch, type ComponentPublicInstance } from "vue";
-import type { CanvasContext } from "@toonflow/tool-canvas/runtime";
-import { waitForControlValue } from "@/lib/mcpControl";
+import type { CanvasContext } from "./canvasSchemas";
+import { waitForControlValue } from "./waitForControlValue";
 import canvasPanel from "./index.vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import { useWorkspaceStore } from "@/stores/workspace";
-import { createCanvasMention, mentionNodeOutputs, queryMentionNodes, type MentionCanvasSource } from "@toonflow/server/agent/mentionSources";
-import type { NodeDocumentState } from "@toonflow/nodes-scaffold/nodeDocument";
+import { createCanvasMention, mentionNodeOutputs, queryMentionNodes, type MentionCanvasSource } from "@/components/agent/mentionSources";
+import type { NodeDocumentState } from "@/nodes/nodeCore/nodeDocument";
 import { copyCanvasFiles, readCanvasFiles, type DocumentNode, type DocumentNodeOptions } from "./canvasFiles";
 
 const props = withDefaults(defineProps<{ active?: boolean; settingsVisible?: boolean }>(), { active: true, settingsVisible: false });
@@ -163,7 +163,7 @@ async function resolveDocumentNodeFile(directory: string, path: string) {
   const matches: { canvasPath: string; nodeId: string; label: string }[] = [];
   const sources = await readDocumentCanvases(directory);
   for (const source of sources.values()) for (const node of source.nodes) {
-    if (node.type !== "remote-textNode") continue;
+    if (!["textNode", "remote-textNode"].includes(node.type ?? "")) continue;
     const textPath = node.data?.textPath ?? `assets/${node.id}/content.md`;
     if (typeof textPath === "string" && identity(textPath) === identity(path)) matches.push({ canvasPath: source.path, nodeId: node.id, label: node.data?.label || node.id });
   }

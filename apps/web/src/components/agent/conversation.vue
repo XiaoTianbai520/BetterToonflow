@@ -31,7 +31,7 @@
             :ref="measureMessage"
             :data-index="row.index"
             :data-message-id="item.id"
-            :data-live-message="item.streaming || item.id === browserMessages.liveMessageId || undefined"
+            :data-live-message="item.streaming || undefined"
             class="messageRow"
             :style="{ transform: `translateY(${row.start}px)` }"
             :class="{ userMessage: item.role === 'user', editingMessage: editingId === item.id }">
@@ -51,7 +51,7 @@
                       </template>
                       <messageMarkdown v-if="!(part.collapsed ?? true)" :content="part.content" :streaming="!!item.streaming" :directory="directory" />
                     </chat-reasoning>
-                    <toolMessage v-else-if="part.type === 'tool' && !isBrowserTool(part.tool)" v-model:collapsed="part.collapsed" :tool="part.tool" :directory="directory" @copy="copyMessage" />
+                    <toolMessage v-else-if="part.type === 'tool'" v-model:collapsed="part.collapsed" :tool="part.tool" :directory="directory" @copy="copyMessage" />
                     <messageMarkdown v-else-if="part.type === 'text' && part.content" :content="part.content" :streaming="!!item.streaming" :directory="directory" />
                   </template>
                   <attachmentList v-if="item.attachments?.length" :attachments="item.attachments" :directory="directory" />
@@ -73,7 +73,6 @@
                 <el-button v-if="!item.report" class="messageAction" text circle :loading="deletingId === item.id" :disabled="locked || remoteRunning" aria-label="删除消息" title="删除消息" @click="deleteMessage(item)"><icon-trash v-if="deletingId !== item.id" :size="14" /></el-button>
               </template>
             </div>
-            <browserPanel v-if="browserMessages.tools.has(item.id)" class="browserPreview" :tools="browserMessages.tools.get(item.id)!" :directory="directory" :active="active" :live="item.id === browserMessages.liveMessageId" />
           </div>
         </div>
       </div>
@@ -160,7 +159,6 @@
 </template>
 
 <script setup lang="ts">
-import { locale, t, translate } from "@toonflow/i18n/vue";
 import { computed, inject, nextTick, reactive, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
 import { defaultRangeExtractor, measureElement, observeElementRect, useVirtualizer } from "@tanstack/vue-virtual";
 import axios from "axios";
@@ -170,7 +168,7 @@ import {
   IconTrash, IconVector, IconMovie, IconPhoto, IconArrowUpRight, IconUsersGroup, IconPaperclip,
 } from "@tabler/icons-vue";
 import { ElMessage } from "element-plus";
-import { getReadableFileExtension, getReadableFileMimeType, readableFileAccept } from "@toonflow/server/documentFormats";
+import { getReadableFileExtension, getReadableFileMimeType, readableFileAccept } from "@/extensions/documentFormats";
 import logoUrl from "@toonflow/assets/logo.svg";
 import modelPopover from "@/components/modelPopover.vue";
 import skillMenu from "./skillMenu.vue";
@@ -186,12 +184,9 @@ import { writeClipboardText } from "@/lib/clipboard";
 import anonymousData from "@/lib/anonymousData";
 import { modelChoices } from "@/stores/settings";
 import { useWorkspaceStore } from "@/stores/workspace";
-import type { AgentAttachment, AgentConversation, AgentMessage } from "./types";
-import type { AgentEvent, AgentMention, AgentToolCall } from "@toonflow/server/agent/types";
+import type { AgentAttachment, AgentConversation, AgentEvent, AgentMention, AgentMessage } from "./types";
 import { createConversationStream, readAgentEvents } from "./replyStream";
-import type { CanvasContext } from "@toonflow/tool-canvas/runtime";
-import browserPanel from "@toonflow/tool-browser/panel";
-import { isBrowserTool } from "@toonflow/tool-browser/client";
+import type { CanvasContext } from "@/pages/workspace/panels/canvas/canvasSchemas";
 import chatItem from "@tdesign-vue-next/chat/es/chat-item";
 import chatReasoning from "@tdesign-vue-next/chat/es/chat-reasoning";
 import messageMarkdown from "@/components/messageMarkdown.vue";
@@ -211,33 +206,7 @@ let attachmentDragDepth = 0;
 const attachmentAccept = `image/*,video/*,${readableFileAccept}`;
 const createCanvasContext = inject<(() => CanvasContext | undefined) | undefined>("canvas", undefined);
 const messages = ref<AgentMessage[]>((props.initialSession?.messages ?? []).map(message => ({ ...message })));
-const browserMessages = computed(() => {
-  const groups = new Map<string, { id: string; tools: AgentToolCall[] }>();
-  let turnId: string | undefined;
-  let liveMessageId: string | undefined;
-  for (const message of messages.value) {
-    if (message.role === "user") {
-      turnId = message.entryId ?? message.id;
-      liveMessageId = undefined;
-      continue;
-    }
-    if (message.replyTo && message.replyTo !== turnId) {
-      turnId = message.replyTo;
-      liveMessageId = undefined;
-    }
-    const tools = message.parts?.flatMap(part => part.type === "tool" && isBrowserTool(part.tool) ? [part.tool] : []);
-    if (!tools?.length) continue;
-    const replyId = turnId ?? message.id;
-    let group = groups.get(replyId);
-    if (!group) { group = { id: message.id, tools: [] }; groups.set(replyId, group); }
-    group.tools.push(...tools);
-    liveMessageId = group.id;
-  }
-  return { tools: new Map([...groups.values()].map(group => [group.id, group.tools])), liveMessageId };
-});
-// 同轮浏览器调用共用该轮首条浏览器消息底部的画面，原始工具记录仍完整保留。
-const displayedMessages = computed(() => messages.value.filter(message => browserMessages.value.tools.has(message.id) || message.role === "user" || message.error || message.report || message.attachments?.length ||
-  !message.parts?.length || message.parts.some(part => part.type !== "tool" || !isBrowserTool(part.tool))));
+const displayedMessages = computed(() => messages.value);
 const stream = createConversationStream(messages);
 const remoteRunning = ref(props.initialSession?.running ?? false);
 const stats = ref(props.initialSession?.stats);
@@ -257,8 +226,7 @@ const atLatestMessage = ref(true);
 let messageListInitialized = false;
 let messageScrollOffset = 0;
 const messageKeys = computed(() => displayedMessages.value.map(item => item.id));
-// ACT: 只常驻当前轮的实时画面，历史浏览器消息仍按需挂载，避免长对话累积连接和 DOM。
-const retainedMessages = computed(() => displayedMessages.value.flatMap((item, index) => item.streaming || item.id === editingId.value || item.id === browserMessages.value.liveMessageId ? [index] : []));
+const retainedMessages = computed(() => displayedMessages.value.flatMap((item, index) => item.streaming || item.id === editingId.value ? [index] : []));
 const messageVirtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>(computed(() => {
   const keys = messageKeys.value;
   const retained = retainedMessages.value;
@@ -318,14 +286,6 @@ watch([() => props.active, messageList], async ([active, element]) => {
   messageListInitialized = true;
 }, { immediate: true, flush: "post" });
 let sender: xSender | undefined;
-watch(locale, () => {
-  if (!sender) return;
-  sender.updateConfig({ placeholder: translate("输入消息，@ 提及节点输出或全局素材…") });
-  sender.chatElement.richText.setAttribute("aria-label", translate("消息"));
-  for (const line of sender.chatEditor.NODES) for (const tag of line.children) {
-    if (tag.type === "Mention") tag.$el.setAttribute("aria-label", t`预览 ${tag.name}`);
-  }
-});
 let controller: AbortController | undefined;
 const senderElement = ref<HTMLElement>();
 const skillMenuRef = ref<InstanceType<typeof skillMenu>>();
@@ -597,13 +557,13 @@ async function sendCanvasResult(event: Extract<AgentEvent, { type: "canvasCall" 
     const result = await canvasContext.call(event, signal);
     body = JSON.stringify({ directory, callId: event.callId, result: result ?? null });
   } catch (error) {
-    body = JSON.stringify({ directory, callId: event.callId, error: (error instanceof Error && error.message ? error.message : translate("画布操作失败")).slice(0, 8000) });
+    body = JSON.stringify({ directory, callId: event.callId, error: (error instanceof Error && error.message ? error.message : "画布操作失败").slice(0, 8000) });
   }
   const cancelled = signal.aborted;
-  if (cancelled) body = JSON.stringify({ directory, callId: event.callId, error: translate("画布操作已取消") });
+  if (cancelled) body = JSON.stringify({ directory, callId: event.callId, error: "画布操作已取消" });
   const response = await fetch("/api/agent/canvasResult", {
     method: "POST",
-    headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+    headers: { "Accept-Language": "zh-CN", "Content-Type": "application/json", "x-toonflow-workspace": "1" },
     body,
     keepalive: cancelled,
     signal: cancelled ? AbortSignal.timeout(5000) : signal,
@@ -661,7 +621,7 @@ async function sendMessage(source?: AgentMessage) {
     await uploadAttachments(attachments, directory, requestController.signal);
     const response = await fetch("/api/agent", {
       method: "POST",
-      headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+      headers: { "Accept-Language": "zh-CN", "Content-Type": "application/json", "x-toonflow-workspace": "1" },
       body: JSON.stringify({ prompt, mentions, attachments: attachments.map(({ name, path, mimeType }) => ({ name, path, mimeType })), directory, providerId: model.providerId, modelId: model.modelId, thinkingLevel: reasoningEffort.value || undefined, sessionFile: props.sessionFile, resendFrom, canvas: canvasContext ? { id: canvasContext.id, tools: canvasContext.tools } : undefined }),
       signal: requestController.signal,
     });
@@ -732,7 +692,7 @@ async function sendMessage(source?: AgentMessage) {
     // ACT: Bun 的流断开事件可能不触发；主动结束仍在等待的提问，不依赖断开通知。
     for (const callId of pendingQuestions.values()) {
       void fetch("/api/agent/answer", {
-        method: "POST", headers: { "Accept-Language": locale.value, "Content-Type": "application/json", "x-toonflow-workspace": "1" },
+        method: "POST", headers: { "Accept-Language": "zh-CN", "Content-Type": "application/json", "x-toonflow-workspace": "1" },
         body: JSON.stringify({ directory, callId, cancelled: true }), keepalive: true,
       }).catch(() => {});
     }
@@ -850,7 +810,7 @@ watch(senderElement, (element, _previous, onCleanup) => {
   if (!element) return;
   const instance = new xSender(element, {
     autoFocus: props.active,
-    placeholder: translate("输入消息，@ 提及节点输出或全局素材…"),
+    placeholder: "输入消息，@ 提及节点输出或全局素材…",
     chatStyle: { minHeight: "44px", maxHeight: "50vh", fontSize: "14px", lineHeight: "24px" },
     keyboardSendFun: event => event.key === "Enter" && !event.shiftKey && !event.isComposing,
     keyboardWrapFun: event => event.key === "Enter" && event.shiftKey && !event.isComposing,
@@ -866,7 +826,7 @@ watch(senderElement, (element, _previous, onCleanup) => {
       tag.$el.dataset.agentMention = tag.id;
       tag.$el.setAttribute("role", "button");
       tag.$el.setAttribute("tabindex", "0");
-      tag.$el.setAttribute("aria-label", t`预览 ${tag.name}`);
+      tag.$el.setAttribute("aria-label", `预览 ${tag.name}`);
       const mention = draftMentions.value.find(item => item.id === tag.id);
       if (!mention || !mentionThumbnailProps(mention).thumbnail) continue;
       const content = tag.$el.querySelector<HTMLElement>(".chat-tag-mention");
@@ -890,7 +850,7 @@ watch(senderElement, (element, _previous, onCleanup) => {
   });
   const editor = instance.chatElement.richText;
   editor.setAttribute("role", "textbox");
-  editor.setAttribute("aria-label", translate("消息"));
+  editor.setAttribute("aria-label", "消息");
   editor.setAttribute("aria-multiline", "true");
   element.addEventListener("paste", pasteAttachments, true);
   window.addEventListener("dragend", resetAttachmentDrag, true);
@@ -1053,8 +1013,6 @@ watch(() => !props.initialSession?.parentFile && !!workspaceStore.pendingAgentMe
           color: var(--el-text-color-secondary);
         }
       }
-
-      .browserPreview { margin-top: 6px; }
 
       &.userMessage .messageActions {
         justify-content: flex-end;

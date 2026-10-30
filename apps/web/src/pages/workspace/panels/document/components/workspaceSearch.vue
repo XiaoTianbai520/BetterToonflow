@@ -13,7 +13,7 @@
         <el-button :disabled="searching || replacing || !selectedFiles.length || !active" @click="previewing = true">预览替换</el-button>
       </div>
       <p class="searchScope">搜索磁盘内容；跳过回收目录、二进制和画布 JSON。单文件最多 2 MiB，本次最多检查 1000 个文件、1000 个目录、20 MiB 文本，展示 500 处匹配。</p>
-      <p class="searchStatus" role="status" aria-live="polite">{{ status ? translate(status) : '输入文本后搜索当前工作区及其子目录。' }}</p>
+      <p class="searchStatus" role="status" aria-live="polite">{{ status ? status : '输入文本后搜索当前工作区及其子目录。' }}</p>
       <p v-if="searched" class="searchCounts">
         已读取 {{ scanned }} 个文本文件，{{ results.length }} 个文件命中 {{ matchCount }} 处。
         跳过：二进制或不支持的编码 {{ skippedBinary }}，过大文件 {{ skippedLarge }}，画布 {{ skippedCanvas }}，读取失败 {{ readFailures }}。
@@ -65,7 +65,6 @@
 import axios from "axios";
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from "vue";
 import { ElAlert, ElButton, ElCheckbox, ElDialog, ElInput, type InputInstance } from "element-plus";
-import { msg, t, translate, type MessageDescriptor } from "@toonflow/i18n/vue";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 
 type SearchMatch = { start: number; end: number; line: number; column: number; before: string; text: string; after: string };
@@ -84,7 +83,7 @@ const replacing = ref(false);
 const replaceCancelled = ref(false);
 const previewing = ref(false);
 const searched = ref(false);
-const status = shallowRef<MessageDescriptor>();
+const status = shallowRef<string>();
 const scanned = ref(0);
 const skippedBinary = ref(0);
 const skippedLarge = ref(0);
@@ -114,7 +113,7 @@ function cancelSearch() {
   searchController = undefined;
   searchRevision++;
   searching.value = false;
-  status.value = msg`搜索已取消；以下为已找到的部分结果。`;
+  status.value = `搜索已取消；以下为已找到的部分结果。`;
 }
 
 function findMatches(text: string, needle: string, matchCase: boolean, limit: number) {
@@ -148,12 +147,12 @@ function isCanvasText(path: string, text: string) {
 }
 
 function failureMessage(error: unknown) {
-  return axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : t`操作失败`;
+  return axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : `操作失败`;
 }
 
 function recordReadFailure(path: string, error: unknown) {
   readFailures.value++;
-  if (issues.value.length < 5) issues.value.push(`${path || t`工作区根目录`}：${failureMessage(error)}`);
+  if (issues.value.length < 5) issues.value.push(`${path || `工作区根目录`}：${failureMessage(error)}`);
 }
 
 async function search() {
@@ -171,15 +170,15 @@ async function search() {
   scanned.value = skippedBinary.value = skippedLarge.value = skippedCanvas.value = readFailures.value = 0;
   searching.value = searched.value = true;
   previewing.value = false;
-  status.value = msg`正在搜索磁盘文件…`;
+  status.value = `正在搜索磁盘文件…`;
   const directories = [""];
   let inspected = 0;
   let listed = 0;
   let textBytes = 0;
-  let limited: MessageDescriptor | undefined;
+  let limited: string | undefined;
   try {
     while (directories.length && !limited) {
-      if (++listed > 1000) { limited = msg`已达到 1000 个目录的检查上限，已停止。以下为部分结果，可缩小查找文本后重试。`; break; }
+      if (++listed > 1000) { limited = `已达到 1000 个目录的检查上限，已停止。以下为部分结果，可缩小查找文本后重试。`; break; }
       const path = directories.shift()!;
       let entries: Awaited<ReturnType<typeof files.list>>["entries"];
       try { ({ entries } = await files.list(path, controller.signal)); }
@@ -191,18 +190,18 @@ async function search() {
       controller.signal.throwIfAborted();
       for (const entry of entries.sort((left, right) => left.path.localeCompare(right.path))) {
         if (entry.type === "directory") { directories.push(entry.path); continue; }
-        if (++inspected > 1000) { limited = msg`已达到 1000 个文件的检查上限，已停止。以下为部分结果，可缩小查找文本后重试。`; break; }
+        if (++inspected > 1000) { limited = `已达到 1000 个文件的检查上限，已停止。以下为部分结果，可缩小查找文本后重试。`; break; }
         if (/\.(?:png|jpe?g|webp|gif|bmp|avif|ico|tiff?|pdf|mp[34]|wav|flac|ogg|m4[av]|webm|mov|avi|mkv|zip|rar|7z|gz|tar|exe|dll|bin|wasm|woff2?|ttf|otf|sqlite|db|docx?|xlsx?|pptx?|psd)$/i.test(entry.path)) { skippedBinary.value++; continue; }
         try {
           const snapshot = await files.readTextSnapshot(entry.path, { maxBytes: 2 * 1024 * 1024, signal: controller.signal });
           controller.signal.throwIfAborted();
           if (isCanvasText(entry.path, snapshot.text)) { skippedCanvas.value++; continue; }
           textBytes += snapshot.text.length * 2;
-          if (textBytes > 20 * 1024 * 1024) { limited = msg`已达到 20 MiB 文本的搜索上限，已停止。以下为部分结果，可缩小查找文本后重试。`; break; }
+          if (textBytes > 20 * 1024 * 1024) { limited = `已达到 20 MiB 文本的搜索上限，已停止。以下为部分结果，可缩小查找文本后重试。`; break; }
           scanned.value++;
           const found = findMatches(snapshot.text, needle, matchCase, 500 - matchCount.value);
           if (found.matches.length) results.value = [...results.value, { path: entry.path, text: snapshot.text, ...found, selected: !found.truncated }];
-          if (matchCount.value >= 500) { limited = msg`已达到 500 处匹配的展示上限，已停止。以下为部分结果，可缩小查找文本后重试。`; break; }
+          if (matchCount.value >= 500) { limited = `已达到 500 处匹配的展示上限，已停止。以下为部分结果，可缩小查找文本后重试。`; break; }
         } catch (error) {
           if (controller.signal.aborted) throw error;
           const status = axios.isAxiosError(error) ? error.response?.status : undefined;
@@ -213,9 +212,9 @@ async function search() {
       }
     }
     if (revision !== searchRevision) return;
-    status.value = limited ?? (readFailures.value ? msg`搜索结束，部分文件读取失败；上方显示前 5 项失败原因。` : msg`搜索完成。`);
+    status.value = limited ?? (readFailures.value ? `搜索结束，部分文件读取失败；上方显示前 5 项失败原因。` : `搜索完成。`);
   } catch (error) {
-    if (revision === searchRevision && !controller.signal.aborted) status.value = msg`搜索未完成：${failureMessage(error)}。以下为已找到的部分结果。`;
+    if (revision === searchRevision && !controller.signal.aborted) status.value = `搜索未完成：${failureMessage(error)}。以下为已找到的部分结果。`;
   } finally {
     if (revision === searchRevision) { searching.value = false; searchController = undefined; }
   }
@@ -274,8 +273,8 @@ async function replaceSelected() {
     replacing.value = false;
     previewing.value = false;
     if (props.directory === directory && props.active) status.value = succeeded + failed < files.length
-      ? msg`替换已停止：成功 ${succeeded} 个文件，失败 ${failed} 个，未处理 ${files.length - succeeded - failed} 个。请重新搜索以刷新结果。`
-      : msg`替换结束：成功 ${succeeded} 个文件，失败 ${failed} 个，未处理 ${files.length - succeeded - failed} 个。请重新搜索以刷新结果。`;
+      ? `替换已停止：成功 ${succeeded} 个文件，失败 ${failed} 个，未处理 ${files.length - succeeded - failed} 个。请重新搜索以刷新结果。`
+      : `替换结束：成功 ${succeeded} 个文件，失败 ${failed} 个，未处理 ${files.length - succeeded - failed} 个。请重新搜索以刷新结果。`;
   }
 }
 

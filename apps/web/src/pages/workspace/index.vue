@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, nextTick, onMounted, onScopeDispose, provide, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
+import { computed, defineAsyncComponent, nextTick, onMounted, provide, ref, shallowRef, watch, type ComponentPublicInstance } from "vue";
 import { onBeforeRouteLeave } from "vue-router";
 import axios from "axios";
 import { IconVector, IconFileText, IconPointer, IconHandStop, IconPlus, IconHelp, IconBook, IconBug, IconBrandWechat, IconBriefcase } from "@tabler/icons-vue";
@@ -133,7 +133,6 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { QRCode } from "tdesign-vue-next";
 import settings from "@/components/settings/index.vue";
 import { useWorkspaceStore } from "@/stores/workspace";
-import { registerWorkspaceControl, waitForControlValue } from "@/lib/mcpControl";
 import anonymousData from "@/lib/anonymousData";
 import { useProviderBalances } from "@/lib/providerBilling";
 import canvasPanel from "./panels/canvas/canvasHost.vue";
@@ -191,51 +190,6 @@ provide("mentionCanvas", () => canvasPanelRef.value?.mentionSource);
 provide("activateCanvasPanel", () => switchPanel("canvas"));
 provide("performWorkspaceFileAction", (directory: string, action: "copy" | "rename" | "move" | "delete", path: string, target?: string, entryType: "canvas" | "directory" = "canvas") =>
   documentPanelRef.value ? documentPanelRef.value.performFileAction(directory, action, path, target, entryType) : performFileAction(directory, action, path, target));
-
-const controlLifetime = new AbortController();
-onScopeDispose(() => controlLifetime.abort(new Error("工作区已关闭")));
-registerWorkspaceControl({
-  getState: () => ({
-    directory: workspaceStore.project?.directory ?? null,
-    canvasId: canvasPanelRef.value?.canvasId || null,
-    panel: activePanel.value,
-    tools: canvasPanelRef.value?.canvasReady ? canvasPanelRef.value.getCanvasContext()?.tools ?? [] : [],
-    document: documentPanelRef.value?.getDocument(false),
-  }),
-  flushSave,
-  async call(request, signal) {
-    const directory = workspaceStore.project?.directory;
-    if (!directory) throw new Error("请先打开工作区");
-    const callSignal = AbortSignal.any([signal, controlLifetime.signal]);
-    const checkDirectory = () => {
-      callSignal.throwIfAborted();
-      if (directory !== workspaceStore.project?.directory) throw new Error("工作区已切换，本次调用已停止");
-    };
-    checkDirectory();
-    if (request.name === "switchPanel") {
-      if (request.args.panel !== "canvas" && request.args.panel !== "document") throw new Error("未知面板");
-      if (!(await switchPanel(request.args.panel))) throw new Error("面板切换失败，请检查文档是否保存成功");
-      checkDirectory();
-      return { panel: activePanel.value };
-    }
-    if (["getDocument", "openDocument", "writeDocument"].includes(request.name)) {
-      if (!(await switchPanel("document"))) throw new Error("文档面板无法打开");
-      const panel = await waitForControlValue(() => documentPanelRef.value, callSignal);
-      checkDirectory();
-      if (request.name === "openDocument") await panel.openDocument(request.args, callSignal);
-      if (request.name === "writeDocument") await panel.writeDocument(request.args, callSignal);
-      checkDirectory();
-      return panel.getDocument();
-    }
-    if (!(await switchPanel("canvas"))) throw new Error("画布面板无法打开");
-    const context = await waitForControlValue(
-      () => (canvasPanelRef.value?.canvasReady || (!canvasPanelRef.value?.canvasId && canvasPanelRef.value?.canvasListReady) ? canvasPanelRef.value.getCanvasContext() : undefined),
-      callSignal
-    );
-    checkDirectory();
-    return context.call({ name: request.name, args: request.args }, callSignal);
-  },
-});
 
 async function flushSave() {
   await documentPanelRef.value?.flushSave();

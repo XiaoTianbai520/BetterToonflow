@@ -1,7 +1,6 @@
 import { reactive, type Ref } from "vue";
 import { throttle } from "lodash-es";
-import type { AgentEvent } from "@toonflow/server/agent/types";
-import type { AgentMessage, AgentMessagePart } from "./types";
+import type { AgentEvent, AgentMessage, AgentMessagePart } from "./types";
 
 export async function* readAgentEvents<T extends { type: string; message?: string } = AgentEvent>(response: Response, signal: AbortSignal) {
   if (!response.ok) {

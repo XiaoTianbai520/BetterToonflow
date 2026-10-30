@@ -1,5 +1,5 @@
 import type { Edge, GraphEdge, GraphNode, Node } from "@vue-flow/core";
-import { isNodeOutput } from "@toonflow/nodes-scaffold/values";
+import { isNodeOutput } from "@/nodes/nodeCore/values";
 import { writeClipboardText } from "@/lib/clipboard";
 
 export const nodeClipboardCommand = /^toonflow:paste-node:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
