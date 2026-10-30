@@ -10,8 +10,8 @@ Java 21、Spring Boot 3、MyBatis-Plus、PostgreSQL 16、Flyway 工程底座。�
 | 环境变量 | 默认值 / 说明 |
 | --- | --- |
 | `TOONFLOW_SERVER_PORT` | `3000` |
-| `TOONFLOW_DB_URL` | `jdbc:postgresql://127.0.0.1:5432/toonflow` |
-| `TOONFLOW_DB_USERNAME` | `toonflow` |
+| `TOONFLOW_DB_URL` | `jdbc:postgresql://192.168.1.102:5432/toonflow` |
+| `TOONFLOW_DB_USERNAME` | `root` |
 | `TOONFLOW_DB_PASSWORD` | 空；部署时注入数据库密码 |
 | `TOONFLOW_DATA_DIR` | `../../data`，相对于进程工作目录；容器部署应传入共享目录绝对路径 |
 | `TOONFLOW_SNAPSHOT_MAX_ATTEMPTS` | `3`，单轮 1~10 次 |
