@@ -3,22 +3,20 @@ import { defineStore } from "pinia";
 import { customProviders, saveSettings, settings } from "@/stores/settings";
 
 export const useHelloStore = defineStore("hello", () => {
-  const completed = computed(() => settings.value.helloCompleted === true);
+  const hasConfiguredModel = computed(() => customProviders.value.some(provider =>
+    provider.enabled !== false && provider.apiUrl?.trim()
+    && ["openai-completions", "openai-responses", "anthropic-messages"].includes(provider.protocol)
+    && provider.models.some(model => model.id.trim()),
+  ));
+  const completed = computed(() => hasConfiguredModel.value && settings.value.helloCompleted === true);
 
   async function load() {
-    if (typeof settings.value.helloCompleted === "boolean") return completed.value;
-    let previouslyCompleted = false;
-    try {
-      previouslyCompleted = JSON.parse(localStorage.getItem("toonflow.hello") ?? "null")?.completed === true;
-    } catch {
-      // ACT: 旧缓存不可读时仍可从已配置的模型恢复；桌面随机端口之间无法迁移 localStorage。
-    }
-    if (previouslyCompleted || customProviders.value.some(provider => typeof provider.apiKey === "string" && provider.apiKey.trim() && provider.models.length))
-      await complete();
+    if (hasConfiguredModel.value && !completed.value) await complete();
     return completed.value;
   }
 
   async function complete() {
+    if (!hasConfiguredModel.value) throw new Error("请先配置一个有效的文本模型");
     await saveSettings(() => ({ helloCompleted: true }));
   }
 
@@ -26,5 +24,5 @@ export const useHelloStore = defineStore("hello", () => {
     await saveSettings(() => ({ helloCompleted: false }));
   }
 
-  return { completed, load, complete, reset };
+  return { completed, hasConfiguredModel, load, complete, reset };
 });

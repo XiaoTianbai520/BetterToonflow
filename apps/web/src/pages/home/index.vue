@@ -3,10 +3,7 @@
     <bg class="pageBackground" />
     <el-header class="pageHeader">
       <div class="headerActions">
-        <el-badge isDot :hidden="!hasDesktopUpdate">
-          <el-button round size="large" :icon="IconSettings" :aria-label="hasDesktopUpdate ? '设置，有新版本可用' : '设置'" @click="settingsVisible = true">设置</el-button>
-        </el-badge>
-        <el-button round size="large" :type="deviceHubEnabled ? 'success' : undefined" :plain="deviceHubEnabled" :icon="deviceHubEnabled || mobileConnection.mode === 'remote' ? IconDeviceDesktop : IconQrcode" @click="mobileConnectVisible = true">{{ mobileConnectionLabel }}</el-button>
+        <el-button round size="large" :icon="IconSettings" aria-label="设置" @click="settingsVisible = true">设置</el-button>
       </div>
       <div class="githubAction">
         <span class="arrowHint starHint">
@@ -76,7 +73,7 @@
               <span class="projectInfo">
                 <span class="projectName" :title="project.name">{{ project.name }}</span>
                 <span class="projectPath" :title="project.directory">{{ project.directory }}</span>
-                <span class="projectTime">最近打开 {{ new Date(project.lastOpenedAt).toLocaleString(locale, { hour12: false }) }}</span>
+                <span class="projectTime">最近打开 {{ new Date(project.lastOpenedAt).toLocaleString("zh-CN", { hour12: false }) }}</span>
               </span>
             </button>
             <div class="projectActions">
@@ -88,21 +85,19 @@
       </section>
     </el-main>
     <settings v-model="settingsVisible" />
-    <mobileConnect v-model="mobileConnectVisible" />
     <workspacePicker ref="relocationPicker" hideTrigger />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { locale, translate } from "@toonflow/i18n/vue";
 import axios from "axios";
 import { storeToRefs } from "pinia";
-import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox, type InputInstance } from "element-plus";
-import { getReadableFileMimeType, readableFileAccept } from "@toonflow/server/documentFormats";
+import { getReadableFileMimeType, readableFileAccept } from "../../../../agentRuntime/src/lib/documentFormats";
 import {
-  IconSettings, IconBrandGithub, IconQrcode, IconDeviceDesktop,
+  IconSettings, IconBrandGithub,
   IconArrowUp, IconLayoutGrid,
   IconList, IconSortDescending,
   IconSortAscending, IconFolder, IconEdit,
@@ -114,16 +109,12 @@ import { createPastedTextFile, readTextAttachment } from "@/components/agent/tex
 import type { AgentAttachment } from "@/components/agent/types";
 import logoUrl from "@toonflow/assets/logo.svg";
 import { useWorkspaceStore, type Project } from "@/stores/workspace";
-import { hasDesktopUpdate } from "@/stores/desktopUpdate";
-import { deviceHubEnabled, mobileConnection, mobileConnectionLabel } from "@/lib/mobile";
 import useWorkspaceFiles from "@/lib/workspaceFiles";
 import settings from "@/components/settings/index.vue";
 import bg from "./bg.vue";
 import workspacePicker from "./workspacePicker.vue";
 
 const settingsVisible = ref(false);
-const mobileConnectVisible = ref(false);
-const mobileConnect = defineAsyncComponent(() => import("@/components/mobileConnect.vue"));
 const router = useRouter();
 const creating = ref(false);
 const opening = ref(false);
@@ -151,7 +142,7 @@ const placeholderPhrases = [
   "设计一支富有想象力的产品宣传片…",
   "从一句话开始，搭建你的创作工作流…",
 ];
-const promptPlaceholder = ref(translate(placeholderPhrases[0]!));
+const promptPlaceholder = ref(placeholderPhrases[0]!);
 
 onMounted(() => {
   window.addEventListener("dragend", clearAttachmentDrag, true);
@@ -159,14 +150,14 @@ onMounted(() => {
   window.addEventListener("blur", clearAttachmentDrag);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let phraseIndex = 0;
-  watch([() => !!prompt.value, locale], ([hasInput], _previous, onCleanup) => {
+  watch(() => !!prompt.value, (hasInput, _previous, onCleanup) => {
     if (reduceMotion) {
-      promptPlaceholder.value = translate(placeholderPhrases[0]!);
+      promptPlaceholder.value = placeholderPhrases[0]!;
       return;
     }
     if (hasInput) return;
-    const segmenter = new Intl.Segmenter(locale.value, { granularity: "grapheme" });
-    const phrases = placeholderPhrases.map(phrase => [...segmenter.segment(translate(phrase))].map(part => part.segment));
+    const segmenter = new Intl.Segmenter("zh-CN", { granularity: "grapheme" });
+    const phrases = placeholderPhrases.map(phrase => [...segmenter.segment(phrase)].map(part => part.segment));
     let characterCount = 0;
     let deleting = false;
     let timer: ReturnType<typeof setTimeout>;
@@ -352,6 +343,10 @@ async function renameProject(project: Project) {
 async function createProject(fromPrompt = true) {
   if (creating.value || opening.value || (fromPrompt && !workspaceDirectory.value)) return;
   creating.value = true;
+  const message = { prompt: prompt.value, attachments: promptAttachments.value.map(item => ({ ...item })), model: selectedModel.value, reasoningEffort: reasoningEffort.value };
+  let files: ReturnType<typeof useWorkspaceFiles> | undefined;
+  const createdPaths: string[] = [];
+  let projectReady = false;
   try {
     let path = workspaceDirectory.value;
     if (!fromPrompt) {
@@ -364,20 +359,46 @@ async function createProject(fromPrompt = true) {
     }
     const { directory, empty } = await useWorkspaceFiles(path).list();
     if (!empty) return ElMessage.warning("该文件夹不为空，请重新选择空文件夹；已有项目请使用“导入项目”或点击项目列表打开。");
-    await useWorkspaceFiles(directory).writeJson("画布1.json", { toonflowCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
+    files = useWorkspaceFiles(directory);
+    await files.writeJson("画布1.json", { toonflowCanvas: true, nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, true);
+    createdPaths.push("画布1.json");
+    if (fromPrompt && message.attachments.some(item => item.file)) {
+      for (const path of ["assets", "assets/chat"]) {
+        await files.mkdir(path);
+        createdPaths.push(path);
+      }
+      for (const attachment of message.attachments) {
+        if (!attachment.file) continue;
+        const extension = attachment.name.match(/\.[a-zA-Z0-9]{1,10}$/)?.[0].toLowerCase() ?? "";
+        const path = `assets/chat/${crypto.randomUUID()}${extension}`;
+        await files.write(path, attachment.file, true);
+        createdPaths.push(path);
+        attachment.path = path;
+        attachment.file = undefined;
+      }
+    }
     await workspaceStore.openProject(directory);
-    if (fromPrompt && (prompt.value.trim() || promptAttachments.value.length)) {
-      workspaceStore.pendingAgentMessage = { directory: workspaceStore.project!.directory, prompt: prompt.value, attachments: [...promptAttachments.value], model: selectedModel.value, reasoningEffort: reasoningEffort.value };
+    projectReady = true;
+    if (fromPrompt && (message.prompt.trim() || message.attachments.length)) {
+      workspaceStore.pendingAgentMessage = { directory, ...message };
     }
     await router.push("/workspace");
   } catch (err) {
-    ElMessage.error(axios.isAxiosError<{ message?: string }>(err)
-      ? err.response?.data.message || "创建项目失败，请重试"
-      : err instanceof Error ? err.message : "创建项目失败，请重试");
+    const rollbackErrors: string[] = [];
+    // 只回滚本次独占创建的文件与空目录，不递归删除用户选择的目录。
+    if (files && !projectReady) for (const path of createdPaths.reverse()) {
+      try { await files.remove(path); }
+      catch { rollbackErrors.push(path); }
+    }
+    const message = axios.isAxiosError<{ message?: string }>(err)
+      ? err.response?.data?.message || "创建项目失败，请重试"
+      : err instanceof Error ? err.message : "创建项目失败，请重试";
+    ElMessage.error(rollbackErrors.length ? `${message}；部分新建文件未清理，请检查：${rollbackErrors.join("、")}` : message);
   } finally {
     creating.value = false;
   }
 }
+
 </script>
 
 <style lang="scss" scoped>

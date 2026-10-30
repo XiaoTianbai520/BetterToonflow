@@ -55,7 +55,6 @@
 </template>
 
 <script setup lang="ts">
-import { translate } from "@toonflow/i18n/vue";
 
 import axios from "axios";
 import { computed, defineAsyncComponent, ref, shallowRef, toRaw, watch, type Component } from "vue";
@@ -64,8 +63,8 @@ import formCreate, { type Api, type Options } from "../../formCreate";
 import { modelIcon } from "@toonflow/model-icons";
 import messageMarkdown from "@/components/messageMarkdown.vue";
 import type { MediaProvider, MediaProviderModel } from "./types";
-import { settings, saveSettings } from "@/stores/settings";
-import { invalidateNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
+import { mediaProviderSettings, saveSettings, type MediaProviderSettings } from "@/stores/settings";
+import { invalidateNodeModels } from "@/nodes/nodeCore/nodeAi";
 
 const { provider } = defineProps<{ provider?: MediaProvider }>();
 const modelEditorDialog = shallowRef<Component>();
@@ -81,7 +80,7 @@ const formValues = ref<Record<string, unknown>>({});
 const formOptions = computed<Options>(() => ({ form: { labelPosition: "top", disabled: saving.value }, appendValue: false, submitBtn: false, resetBtn: false }));
 const revision = ref("");
 const formError = ref("");
-const modelTypes = { get image() { return translate("图片"); }, get video() { return translate("视频"); }, get audio() { return translate("音频"); }, get text() { return translate("文本"); } };
+const modelTypes = { get image() { return "图片"; }, get video() { return "视频"; }, get audio() { return "音频"; }, get text() { return "文本"; } };
 const modeLabels: Record<string, string> = {
   singleImage: "单图参考", multiReference: "多图参考", startEndRequired: "首尾帧必填",
   endFrameOptional: "尾帧可选", startFrameOptional: "首帧可选",
@@ -93,9 +92,9 @@ watch(visible, isVisible => {
   formError.value = "";
   modelEditorVisible.value = false;
   editingModelIndex.value = undefined;
-  const configs = settings.value.mediaProviderConfigs as Record<string, Record<string, unknown>> | undefined;
+  const configs = mediaProviderSettings.value;
   formRules.value = formCreate.copyRules(provider?.rules ?? []);
-  formValues.value = structuredClone(toRaw((provider && configs?.[provider.id]) ?? {}));
+  formValues.value = structuredClone(toRaw((provider && configs?.[provider.id]?.config) ?? {}));
   revision.value = provider?.revision ?? "";
   models.value = JSON.parse(JSON.stringify(provider?.models ?? []));
 }, { immediate: true });
@@ -103,7 +102,7 @@ watch(visible, isVisible => {
 function modelTags(model: MediaProviderModel) {
   const modes = Array.isArray(model.mode) ? model.mode.flat().filter((mode): mode is string => typeof mode === "string") : [];
   return modes.map(mode => {
-    if (mode === "text") return model.type === "image" ? translate("文生图") : translate("文生视频");
+    if (mode === "text") return model.type === "image" ? "文生图" : "文生视频";
     const reference = /^(imageReference|videoReference|audioReference):(\d+)$/.exec(mode);
     return reference ? `${modeLabels[reference[1]!]} ×${reference[2]}` : modeLabels[mode] ?? mode;
   });
@@ -152,12 +151,9 @@ async function saveModels() {
     modelsSaved = true;
     invalidateNodeModels("media");
     await saveSettings(settings => {
-      const configs = settings.mediaProviderConfigs as Record<string, Record<string, unknown>> | undefined;
-      if (configs !== undefined && (!configs || typeof configs !== "object" || Array.isArray(configs))) throw new Error("媒体供应商配置格式无效");
-      const current = configs?.[providerId];
-      if (current !== undefined && (!current || typeof current !== "object" || Array.isArray(current))) throw new Error("当前供应商配置格式无效");
-      if (Object.entries(config).every(([field, value]) => JSON.stringify(value) === JSON.stringify(current?.[field]))) return;
-      return { mediaProviderConfigs: { ...configs, [providerId]: { ...current, ...config } } };
+      const configs = (settings.mediaProviders ?? {}) as Record<string, MediaProviderSettings>;
+      const current = configs[providerId];
+      return { mediaProviders: { ...configs, [providerId]: { ...current, enabled: current?.enabled ?? true, config: { ...current?.config, ...config } } } };
     });
     configSaved = true;
     const response = await axios.get<{ code: number; data: MediaProvider[]; message?: string }>("/api/providers/media/list");

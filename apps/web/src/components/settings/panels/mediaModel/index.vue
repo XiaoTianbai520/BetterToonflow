@@ -3,19 +3,18 @@
     <div class="itemList">
       <el-card v-for="item in sortedProviders" :key="item.fileName" class="providerItem" shadow="never">
         <div class="providerHeader">
-          <div v-if="item.icon || item.id.toLowerCase() === 'tfrouter'" class="providerMark" aria-hidden="true">
-            <img class="providerLogo" :class="{ monochrome: item.id.toLowerCase() === 'tfrouter' }" :src="item.icon || logoUrl" alt="" />
+          <div v-if="item.icon" class="providerMark" aria-hidden="true">
+            <img class="providerLogo" :src="item.icon" alt="" />
           </div>
           <div class="providerInfo">
             <div class="providerHeading">
               <el-text class="providerName" tag="strong">{{ item.label }}</el-text>
-              <el-tag v-if="item.id.toLowerCase() === 'tfrouter'" size="small">官方</el-tag>
             </div>
             <el-text class="providerId" size="small" type="info" :title="item.fileName">{{ item.fileName }}</el-text>
           </div>
         </div>
         <el-alert v-if="item.loadError" :title="item.loadError" type="error" :closable="false" showIcon />
-        <tfAccount v-if="item.id.toLowerCase() === 'tfrouter'" :apiKey="getProviderApiKey(item.id)" :visible="visible" :saveApiKey="(key) => saveProviderApiKey(item.id, key)" />
+        <providerBalance v-if="item.supportsBalance" :providerId="item.id" :visible="visible" />
         <div class="providerFooter">
           <div class="providerMeta">
             <el-tag v-if="item.version" size="small" type="info" effect="plain">v{{ item.version }}</el-tag>
@@ -34,7 +33,9 @@
     <div class="providerActions">
       <el-button class="addButton" :icon="IconPlus" @click="openAdd('builtin')">添加供应商</el-button>
       <el-button class="addButton" :icon="IconSettings" @click="openAdd('custom')">添加自定义供应商</el-button>
+      <el-button class="addButton" @click="debugVisible = true">供应商沙箱调试器</el-button>
     </div>
+    <providerDebugDialog v-if="debugVisible" v-model="debugVisible" />
     <component :is="mediaProviderDialog" v-model="providerDialogVisible" :mode="addMode" @added="saveProviderItem" />
     <component :is="editProviderDialog" v-model="editorVisible" :provider="editingProvider" @saved="saveProviderItem" />
   </div>
@@ -45,17 +46,18 @@ import axios from "axios";
 import { computed, defineAsyncComponent, onMounted, onBeforeUnmount, ref, shallowRef, type Component } from "vue";
 import { ElMessage } from "element-plus";
 import { IconPlus, IconSettings, IconEdit, IconTrash, IconDownload } from "@tabler/icons-vue";
-import logoUrl from "@toonflow/assets/logo.svg";
 import type { MediaProvider } from "./types";
-import { settings, saveSettings } from "@/stores/settings";
-import { invalidateNodeModels } from "@toonflow/nodes-scaffold/nodeAi";
-import tfAccount from "../../tfAccount.vue";
+import { saveSettings } from "@/stores/settings";
+import { invalidateNodeModels } from "@/nodes/nodeCore/nodeAi";
+import providerBalance from "../../tfAccount.vue";
 
+const providerDebugDialog = defineAsyncComponent(() => import("../developer/providerDebugDialog.vue"));
+const debugVisible = ref(false);
 const { visible = true } = defineProps<{ visible?: boolean }>();
 const mediaProviderDialog = shallowRef<Component>();
 const editProviderDialog = shallowRef<Component>();
 const providers = ref<MediaProvider[]>([]);
-const sortedProviders = computed(() => [...providers.value].sort((a, b) => Number(b.id.toLowerCase() === "tfrouter") - Number(a.id.toLowerCase() === "tfrouter")));
+const sortedProviders = computed(() => providers.value.filter(provider => provider.id.toLowerCase() !== "tfrouter"));
 const loaded = ref(false);
 const providerDialogVisible = ref(false);
 const editorVisible = ref(false);
@@ -65,24 +67,8 @@ const deletingFile = ref("");
 const fetchingFile = ref("");
 let loadRequest = 0;
 
-function getProviderApiKey(id: string) {
-  const configs = settings.value.mediaProviderConfigs as Record<string, { apiKey?: unknown }> | undefined;
-  const apiKey = configs?.[id]?.apiKey;
-  return typeof apiKey === "string" ? apiKey : "";
-}
-
-async function saveProviderApiKey(id: string, key: string) {
-  await saveSettings(settings => {
-    const configs = settings.mediaProviderConfigs;
-    const current = configs && typeof configs === "object" && !Array.isArray(configs) ? configs as Record<string, unknown> : {};
-    const existing = current[id];
-    const config = existing && typeof existing === "object" && !Array.isArray(existing) ? existing as Record<string, unknown> : {};
-    return { mediaProviderConfigs: { ...current, [id]: { ...config, apiKey: key } } };
-  });
-}
-
-function refreshInstalled(event: WindowEventMap["toonflow:plugin-installed"]) {
-  if (event.detail.type === "provider") void loadProviders();
+function refreshInstalled(event: Event) {
+  if ((event as CustomEvent<{ type: string }>).detail?.type === "provider") void loadProviders();
 }
 onMounted(() => {
   void loadProviders();
@@ -145,11 +131,11 @@ async function deleteProvider(provider: MediaProvider) {
     invalidateNodeModels("media");
     providers.value = providers.value.filter(item => item.fileName !== provider.fileName);
     await saveSettings(settings => {
-      const configs = settings.mediaProviderConfigs;
+      const configs = settings.mediaProviders;
       if (!configs || typeof configs !== "object" || Array.isArray(configs) || !Object.hasOwn(configs, provider.id)) return;
       const current = { ...configs } as Record<string, unknown>;
       delete current[provider.id];
-      return { mediaProviderConfigs: current };
+      return { mediaProviders: current };
     });
   } catch (error) {
     const message = axios.isAxiosError(error) ? error.response?.data?.message || error.message : error instanceof Error ? error.message : "删除失败，请重试";

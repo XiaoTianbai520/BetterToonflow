@@ -17,4 +17,5 @@ export type MediaProvider = {
   models: MediaProviderModel[];
   revision: string;
   loadError?: string;
+  supportsBalance?: boolean;
 };

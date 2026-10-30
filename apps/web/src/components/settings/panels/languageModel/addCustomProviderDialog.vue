@@ -121,7 +121,6 @@ import {
 } from "@tabler/icons-vue";
 import { saveSettings, type CustomProvider, type CustomProviderModel } from "@/stores/settings";
 import { languageProviders } from "@toonflow/providers";
-import { isTfRouterProvider } from "@/lib/tf";
 
 const props = defineProps<{ provider?: CustomProvider }>();
 const visible = defineModel<boolean>({ default: false });
@@ -169,7 +168,7 @@ const rules: FormRules = {
   label: [{ required: true, whitespace: true, message: "请输入显示名称", trigger: "blur" }],
   apiUrl: [
     {
-      validator: (_rule, value, callback) => {
+      validator: (_rule: unknown, value: string, callback: (error?: Error) => void) => {
         try {
           const url = new URL(value);
           if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error();
@@ -223,11 +222,6 @@ async function fetchModels() {
     );
     if (controller.signal.aborted) return;
     if (data.code !== 200 || !Array.isArray(data.data)) throw new Error(data.message || "获取模型列表失败");
-    if (isTfRouterProvider(form)) {
-      if (!data.data.length) throw new Error("未获取到可用模型，请检查 API Key 后重试");
-      models.value = data.data.map((item: CustomProviderModel) => ({ ...item, key: crypto.randomUUID() }));
-      return;
-    }
     fetchedModels.value = data.data;
     selectedIds.value = new Set();
     modelSearch.value = "";
@@ -295,14 +289,14 @@ async function addProvider() {
       })),
     };
     await saveSettings(settings => {
-      const existing = settings.customProviders;
+      const existing = settings.providers;
       if (existing !== undefined && !Array.isArray(existing)) throw new Error("已保存的供应商配置格式不正确");
       if (languageProviders.some(item => item.id !== providerId && item.id.toLowerCase() === updatedProvider.id.toLowerCase())
         || existing?.some(item => typeof item?.id === "string" && item.id !== providerId && item.id.toLowerCase() === updatedProvider.id.toLowerCase())) {
         throw new Error("Provider ID 已存在");
       }
       if (providerId && !existing?.some(item => item.id === providerId)) throw new Error("供应商已不存在");
-      return { customProviders: providerId
+      return { providers: providerId
         ? existing!.map(item => item.id === providerId ? { ...item, ...updatedProvider } : item)
         : [...(existing ?? []), updatedProvider] };
     });

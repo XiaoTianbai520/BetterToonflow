@@ -2,7 +2,7 @@
   <div class="personalization">
     <section class="settingSection" aria-labelledby="instructionsTitle">
       <div class="settingInfo">
-        <h3 id="instructionsTitle">Toonflow 说明</h3>
+        <h3 id="instructionsTitle">AGENTS.md 行为准则</h3>
         <p class="description">为所有聊天提供额外说明和上下文。支持 Markdown，保存后下一次发送消息时生效。</p>
       </div>
       <el-alert v-if="document.error" :title="getDocumentError(document)" type="error" :closable="false" showIcon />
@@ -13,7 +13,7 @@
         :maxlength="maxLength"
         :disabled="!document.loaded || document.loading"
         resize="none"
-        aria-label="Toonflow 说明内容" />
+        aria-label="AGENTS.md 行为准则内容" />
       <div class="editorFooter">
         <span class="editorStatus">
           {{ document.loading ? "正在读取…" : isDirty(document) ? "有未保存的修改" : "" }}
@@ -24,7 +24,7 @@
             :icon="IconRefresh"
             :loading="document.loading"
             :disabled="document.saving"
-            aria-label="重新加载 Toonflow 说明"
+            aria-label="重新加载 AGENTS.md 行为准则"
             @click="reloadDocument(document, 'agents')">
             {{ document.loaded ? "重新加载" : "重试" }}
           </el-button>
@@ -33,7 +33,7 @@
             :icon="IconDeviceFloppy"
             :loading="document.saving"
             :disabled="!document.loaded || document.loading || document.conflict || !isDirty(document) || document.content.length > maxLength"
-            aria-label="保存 Toonflow 说明"
+            aria-label="保存 AGENTS.md 行为准则"
             @click="saveDocument(document, 'agents')">
             保存
           </el-button>
@@ -76,7 +76,7 @@
         </div>
       </div>
     </section>
-    <el-dialog v-model="memoryVisible" title="Toonflow 记忆" width="min(760px, calc(100vw - 32px))" alignCenter appendToBody>
+    <el-dialog v-model="memoryVisible" title="MEMORY.md 长期记忆" width="min(760px, calc(100vw - 32px))" alignCenter appendToBody>
       <div class="memoryContent">
         <el-alert v-if="memoryDocument.error" :title="getDocumentError(memoryDocument)" type="error" :closable="false" showIcon />
         <el-input
@@ -126,7 +126,6 @@
 </template>
 
 <script setup lang="ts">
-import { msg, translate } from "@toonflow/i18n/vue";
 import { computed, onActivated, reactive, ref, watch } from "vue";
 import axios from "axios";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -148,7 +147,7 @@ type DocumentResponse = { code: number; data: DocumentContent; message?: string 
 const props = defineProps<{ visible: boolean }>();
 const maxLength = 20000;
 const headers = { "x-toonflow-workspace": "1" };
-const conflictMessage = msg`文件已被其他操作修改。当前草稿已保留，请先复制需要保留的内容，再重新加载最新版本。`;
+const conflictMessage = `文件已被其他操作修改。当前草稿已保留，请先复制需要保留的内容，再重新加载最新版本。`;
 const document = reactive<DocumentState>({
   content: "",
   revision: "",
@@ -176,7 +175,7 @@ function isDirty(document: DocumentState) {
 }
 
 function getDocumentError(document: DocumentState) {
-  return document.error === conflictMessage.id ? translate(conflictMessage) : document.error;
+  return document.error;
 }
 
 function errorMessage(error: unknown) {
@@ -240,17 +239,17 @@ async function saveDocument(document: DocumentState, name: "agents" | "memory") 
     );
     if (data.code === 409) {
       document.conflict = true;
-      throw new Error(conflictMessage.id);
+      throw new Error(conflictMessage);
     }
     if (data.code !== 200) throw new Error(data.message || "保存失败，请重试");
     document.savedContent = data.data.content;
     document.revision = data.data.revision;
     if (document.content === content) document.content = data.data.content;
-    ElMessage.success(`${name === "agents" ? "Toonflow 说明" : "本地记忆"}已保存`);
+    ElMessage.success(`${name === "agents" ? "AGENTS.md 行为准则" : "本地记忆"}已保存`);
     return true;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 409) document.conflict = true;
-    document.error = document.conflict ? conflictMessage.id : errorMessage(error);
+    document.error = document.conflict ? conflictMessage : errorMessage(error);
     ElMessage.error(getDocumentError(document));
   } finally {
     document.saving = false;
@@ -306,7 +305,7 @@ async function deleteMemory() {
       return;
     }
     try {
-      await ElMessageBox.confirm("将删除所有工作区共用的本地记忆及未保存的记忆修改，此操作无法撤销。Toonflow 说明会保留。", "删除本地记忆", {
+      await ElMessageBox.confirm("将删除所有工作区共用的本地记忆及未保存的记忆修改，此操作无法撤销。AGENTS.md 行为准则会保留。", "删除本地记忆", {
         confirmButtonText: "删除",
         cancelButtonText: "取消",
         type: "warning",

@@ -3,14 +3,14 @@
     <div class="providerPicker">
       <aside class="providerSidebar" aria-label="选择厂商">
         <button
-          v-for="item in languageProviders"
+          v-for="item in builtinProviders"
           :key="item.id"
           class="providerItem"
           type="button"
           :disabled="saving"
           :aria-pressed="selectedProvider === item.id"
           @click="selectedProvider = item.id">
-          <img v-if="item.icon" class="providerLogo" :class="{ monochrome: item.id === 'tfRouter' }" :src="item.icon" alt="" />
+          <img v-if="item.icon" class="providerLogo" :src="item.icon" alt="" />
           <modelIcon v-else :model="item.id" :size="18" />
           <span>{{ item.label }}</span>
         </button>
@@ -37,7 +37,7 @@
               </template>
             </el-auto-resizer>
           </div>
-          <el-text v-else-if="!fetching" type="info" size="small">{{ activeProvider && isTfRouterProvider(activeProvider) ? '保存 API Key 后自动获取模型列表' : formValues.apiKey ? '未获取到模型' : '填写 API Key 后自动获取模型列表' }}</el-text>
+          <el-text v-else-if="!fetching" type="info" size="small">{{ formValues.apiKey ? '未获取到模型' : '填写 API Key 后自动获取模型列表' }}</el-text>
           <el-alert v-if="formError" :title="formError" type="error" :closable="false" showIcon />
         </section>
       </el-scrollbar>
@@ -59,10 +59,10 @@ import { modelIcon } from "@toonflow/model-icons";
 import messageMarkdown from "@/components/messageMarkdown.vue";
 import type { Column } from "element-plus";
 import { saveSettings, type CustomProviderModel } from "@/stores/settings";
-import { isTfRouterProvider } from "@/lib/tf";
 
+const builtinProviders = languageProviders.filter(provider => provider.id.toLowerCase() !== "tfrouter");
 const visible = defineModel<boolean>({ default: false });
-const selectedProvider = ref<string>(languageProviders[0]?.id ?? "");
+const selectedProvider = ref<string>(builtinProviders[0]?.id ?? "");
 const formApi = shallowRef<Api>();
 const formValues = ref<Record<string, unknown>>({});
 const models = shallowRef<CustomProviderModel[]>([]);
@@ -79,7 +79,7 @@ watch(selectedProvider, () => {
   formError.value = "";
   formValues.value = {};
 }, { flush: "sync" });
-const activeProvider = computed(() => languageProviders.find(provider => provider.id === selectedProvider.value));
+const activeProvider = computed(() => builtinProviders.find(provider => provider.id === selectedProvider.value));
 const providerReadme = computed(() => {
   const provider = activeProvider.value;
   return provider && "readme" in provider && typeof provider.readme === "string" ? provider.readme : "";
@@ -96,7 +96,6 @@ watch(
     modelError.value = "";
     fetching.value = false;
     if (!isVisible || !provider) return;
-    if (isTfRouterProvider(provider)) return;
     if (provider.models.length) {
       models.value = structuredClone(provider.models);
       return;
@@ -131,7 +130,7 @@ watch(
 );
 
 function resetForm() {
-  selectedProvider.value = languageProviders[0]?.id ?? "";
+  selectedProvider.value = builtinProviders[0]?.id ?? "";
   formError.value = "";
   formApi.value = undefined;
   formValues.value = {};
@@ -159,12 +158,12 @@ async function addProvider() {
       models: models.value.map(model => ({ ...model })),
     };
     await saveSettings(settings => {
-      const existing = settings.customProviders;
+      const existing = settings.providers;
       if (existing !== undefined && !Array.isArray(existing)) throw new Error("已保存的供应商配置格式不正确");
       if (existing?.some(item => typeof item?.id === "string" && item.id.toLowerCase() === provider.id.toLowerCase())) {
         throw new Error("此供应商已添加，请在供应商列表中编辑");
       }
-      return { customProviders: [...(existing ?? []), addedProvider] };
+      return { providers: [...(existing ?? []), addedProvider] };
     });
     visible.value = false;
   } catch (error) {

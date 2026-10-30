@@ -1,19 +1,13 @@
 <template>
-  <section class="nodeMenuSettings" aria-labelledby="nodeMenuTitle" :aria-busy="loading">
+  <section class="nodeMenuSettings" aria-labelledby="nodeMenuTitle">
     <div class="menuHeader">
       <h3 id="nodeMenuTitle">节点菜单管理</h3>
       <div class="menuActions">
-        <el-button text size="small" :icon="IconRestore" :disabled="loading || !!loadError" @click="resetMenu">恢复默认</el-button>
+        <el-button text size="small" :icon="IconRestore" @click="resetMenu">恢复默认</el-button>
       </div>
     </div>
     <p class="description">像右键菜单一样整理节点。拖动调整顺序或移入子菜单，点击眼睛隐藏，修改后自动保存。</p>
-    <div v-if="loadError" class="loadError" role="alert">
-      <span>{{ loadError }}</span>
-      <el-button size="small" :loading="loading" @click="loadNodes">重试</el-button>
-    </div>
-    <p v-else-if="loading" class="description" role="status">正在读取节点列表…</p>
-    <template v-else>
-      <div class="menuBoard" role="region" aria-label="节点菜单编辑器" @dragleave="leaveBoard">
+    <div class="menuBoard" role="region" aria-label="节点菜单编辑器" @dragleave="leaveBoard">
         <section
           v-for="column in menuColumns"
           :key="column.id"
@@ -92,7 +86,7 @@
                   :aria-label="`${item.hidden ? '显示' : '隐藏'}${item.label}`"
                   :title="item.hidden ? '显示' : '隐藏'"
                   :aria-pressed="!item.hidden"
-                  @click.stop="setVisible(item, item.hidden)"
+                  @click.stop="setVisible(item, item.hidden === true)"
                   @keydown.stop>
                   <icon-eye-off v-if="item.hidden" :size="14" aria-hidden="true" />
                   <icon-eye v-else :size="14" aria-hidden="true" />
@@ -114,16 +108,14 @@
           </button>
         </section>
       </div>
-    </template>
   </section>
 </template>
 
 <script setup lang="ts">
-import axios from "axios";
-import { computed, onBeforeUnmount, onMounted, ref, watch, type Component } from "vue";
+import { computed, ref, watch, type Component } from "vue";
 import { ElMessage, type InputInstance } from "element-plus";
-import { IconBox, IconFolder, IconFolderOpen, IconFolderMinus, IconRestore, IconChevronRight, IconEdit, IconEye, IconEyeOff, IconPlus, IconDragDrop, IconFileText, IconPhoto, IconVideo, IconMusic, IconMusicBolt, IconCube3dSphere, IconPhotoAi, IconCameraAi } from "@tabler/icons-vue";
-import { normalizeNodeMenu, resolveNodeMenu, serializeNodeMenu, type NodeMenuItem } from "@toonflow/server/nodeMenu";
+import { IconBox, IconFolder, IconFolderOpen, IconFolderMinus, IconRestore, IconChevronRight, IconEdit, IconEye, IconEyeOff, IconPlus, IconDragDrop, IconFileText, IconPhoto, IconVideo, IconMusic, IconMusicBolt, IconPhotoAi, IconCameraAi } from "@tabler/icons-vue";
+import { normalizeNodeMenu, resolveNodeMenu, serializeNodeMenu, type NodeMenuItem } from "../../nodeMenu";
 import { generalSettings, updateGeneralSettings } from "@/stores/settings";
 
 type MenuEntry = { item: NodeMenuItem; parentId: string; depth: number; siblings: NodeMenuItem[]; index: number; path: string[] };
@@ -131,16 +123,24 @@ type MenuColumn = { id: string; depth: number; label: string; items: NodeMenuIte
 type DropTarget = { parentId: string; index: number; itemId?: string; mode: "before" | "after" | "inside" | "end" };
 const levelNames = ["一级", "二级", "三级"];
 const nodeIcons: Record<string, Component> = {
-  "remote-textNode": IconFileText,
-  "remote-imageNode": IconPhoto,
-  "remote-videoNode": IconVideo,
-  "remote-audioNode": IconMusic,
-  "remote-audioGenerationNode": IconMusicBolt,
-  "remote-director3dNode": IconCube3dSphere,
-  "remote-imageGenerationNode": IconPhotoAi,
-  "remote-videoGenerationNode": IconCameraAi,
+  "textNode": IconFileText,
+  "imageNode": IconPhoto,
+  "videoNode": IconVideo,
+  "audioNode": IconMusic,
+  "audioGenerationNode": IconMusicBolt,
+  "imageGenerationNode": IconPhotoAi,
+  "videoGenerationNode": IconCameraAi,
 };
-const installedNodes = ref<{ type: string; label: string; enabled: boolean }[]>([]);
+// ACT: 节点已源码内聚，菜单只引用固定的 7 种类型，不再请求动态节点插件接口。
+const installedNodes = ref([
+  { type: "textNode", label: "文本", enabled: true },
+  { type: "imageNode", label: "图片", enabled: true },
+  { type: "imageGenerationNode", label: "图片生成", enabled: true },
+  { type: "videoNode", label: "视频", enabled: true },
+  { type: "videoGenerationNode", label: "视频生成", enabled: true },
+  { type: "audioNode", label: "音频", enabled: true },
+  { type: "audioGenerationNode", label: "音频生成", enabled: true },
+]);
 const installedTypes = computed(() => new Set(installedNodes.value.map(node => node.type)));
 const disabledTypes = computed(() => new Set(installedNodes.value.filter(node => !node.enabled).map(node => node.type)));
 const menuItems = ref<NodeMenuItem[]>([]);
@@ -151,9 +151,6 @@ const openGroups = ref<string[]>([]);
 const draggedId = ref("");
 const dropTarget = ref<DropTarget>();
 const itemName = ref("");
-const loading = ref(true);
-const loadError = ref("");
-let loadRequest = 0;
 
 watch([() => generalSettings.value.nodeMenu, installedNodes], () => {
   const saved = normalizeNodeMenu(serializeNodeMenu(generalSettings.value.nodeMenu, installedTypes.value));
@@ -346,38 +343,6 @@ function resetMenu() {
   updateGeneralSettings({ nodeMenu: [] });
 }
 
-async function loadNodes() {
-  const request = ++loadRequest;
-  loading.value = true;
-  try {
-    const { data } = await axios.get<{ code: number; data: { name: string; displayName: string; enabled?: boolean }[] }>("/api/nodes/get", {
-      headers: { "Cache-Control": "no-cache", "x-toonflow-workspace": "1" },
-    });
-    if (request !== loadRequest) return;
-    if (data.code !== 200 || !Array.isArray(data.data) || data.data.some(node => !node || typeof node.name !== "string" || !/^[a-z][a-zA-Z0-9]*$/.test(node.name))) {
-      throw new Error("节点列表格式错误");
-    }
-    installedNodes.value = data.data.map(node => ({ type: `remote-${node.name}`, label: typeof node.displayName === "string" && node.displayName ? node.displayName : node.name, enabled: node.enabled !== false }));
-    loadError.value = "";
-  } catch {
-    if (request === loadRequest) loadError.value = "节点列表读取失败，请重试。已保存的菜单配置仍会保留。";
-  } finally {
-    if (request === loadRequest) loading.value = false;
-  }
-}
-
-function refreshInstalled(event: WindowEventMap["toonflow:plugin-installed"]) {
-  if (event.detail.type === "node") void loadNodes();
-}
-
-onMounted(() => {
-  void loadNodes();
-  window.addEventListener("toonflow:plugin-installed", refreshInstalled);
-});
-onBeforeUnmount(() => {
-  loadRequest++;
-  window.removeEventListener("toonflow:plugin-installed", refreshInstalled);
-});
 </script>
 
 <style lang="scss" scoped>
