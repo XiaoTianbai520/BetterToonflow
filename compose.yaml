@@ -1,12 +1,94 @@
+# 复制 .env.example 为 .env 并填写两个独立密钥，再执行 docker compose up --build -d --wait。
 services:
-  toonflow:
-    build: .
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-toonflow}
+      POSTGRES_USER: ${POSTGRES_USER:-toonflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 中设置数据库密码}
+    volumes:
+      - postgresData:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
     init: true
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:3000:3000"
+      - "${TOONFLOW_BIND_ADDRESS:-127.0.0.1}:3000:3000"
+    environment:
+      TOONFLOW_SERVER_PORT: "3000"
+      TOONFLOW_DATA_DIR: /app/data
+      TOONFLOW_INTERNAL_TOKEN: ${TOONFLOW_INTERNAL_TOKEN:?请在 .env 中设置内部鉴权密钥}
+      TOONFLOW_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-toonflow}
+      TOONFLOW_DB_USERNAME: ${POSTGRES_USER:-toonflow}
+      TOONFLOW_DB_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 中设置数据库密码}
+      TOONFLOW_AGENT_RUNTIME_URL: http://agentRuntime:3001
+      # 当前 Java 客户端读取 toonflow.agent-runtime.url，通过 Spring 属性适配环境变量。
+      SPRING_APPLICATION_JSON: '{"toonflow":{"agent-runtime":{"url":"$${TOONFLOW_AGENT_RUNTIME_URL}"}}}'
     volumes:
-      - toonflowData:/app/data
+      - ./data:/app/data
+      - ./workspaces:/app/workspaces
+    healthcheck:
+      # 同时覆盖前端静态资源、数据库读取、快照落盘及 Java -> Bun 内部鉴权链路。
+      test:
+        - CMD-SHELL
+        - >-
+          test -s /app/data/settings.json &&
+          curl --fail --silent --max-time 5 http://127.0.0.1:3000/ > /dev/null &&
+          curl --fail --silent --max-time 5 http://127.0.0.1:3000/api/settings/get > /dev/null &&
+          curl --fail --silent --max-time 5 http://127.0.0.1:3000/api/ai/media/models > /dev/null
+      interval: 15s
+      timeout: 17s
+      retries: 20
+      start_period: 60s
+
+  agentRuntime:
+    build:
+      context: .
+      dockerfile: apps/agentRuntime/Dockerfile
+    init: true
+    restart: unless-stopped
+    # 不依赖 server 的健康状态，避免 server 的端到端健康检查形成循环依赖。
+    depends_on:
+      server:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      TOONFLOW_DATA_DIR: /app/data
+      TOONFLOW_AGENT_RUNTIME_PORT: "3001"
+      TOONFLOW_INTERNAL_TOKEN: ${TOONFLOW_INTERNAL_TOKEN:?请在 .env 中设置内部鉴权密钥}
+    volumes:
+      - ./data:/app/data
+      - ./workspaces:/app/workspaces
+    # 只有容器网络端口，禁止添加 ports 宿主机映射。
+    expose:
+      - "3001"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          test -s /app/data/settings.json &&
+          curl --fail --silent --max-time 5
+          -H "X-Toonflow-Internal-Token: $${TOONFLOW_INTERNAL_TOKEN}"
+          http://agentRuntime:3001/api/ai/media/models > /dev/null &&
+          test "$$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 5
+          http://agentRuntime:3001/api/ai/media/models)" = 403
+      interval: 15s
+      timeout: 12s
+      retries: 20
+      start_period: 60s
 
 volumes:
-  toonflowData:
+  postgresData:
