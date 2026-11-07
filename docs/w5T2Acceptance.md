@@ -8,6 +8,59 @@
 
 **结论（2026-11-07 更新）：达到收官 DoD，签署 W5-T2 验收通过（附下文登记的偏差与已知限制）。**
 
+**W5-T1 补验（2026-11-07）：Docker Compose 全栈编排与双后端启动对账已在真实 Docker 环境验收通过，黄金用例步骤 1 的 compose 启动前提由此闭环，详见下文 W5-T1 补验章节。**
+
+## 2026-11-07 W5-T1 补验：Docker Compose 全栈容器化编排与双后端启动对账（最新）
+
+环境：服务器 `192.168.1.102`（Ubuntu 26.04.1 LTS，Docker 29.8.0 / Compose v5.5.1），本机 Windows 无 Docker。服务器直连 GitHub 超时、Docker Hub 不可达，故代码由本机 `git bundle` 同步到 `/opt/apps/toonflow`，基线 commit `12cc925`。`.env` 由 `.env.example` 复制，两个密钥均用 `openssl rand -hex 32` 生成 64 位 hex（部署库独立密码与 `TOONFLOW_INTERNAL_TOKEN` 各自独立，两后端共用同一个 token），文件权限 600、被 `.gitignore:23` 忽略，密钥值未写入任何文档、日志或提交。
+
+宿主已有独立 `postgres` 容器占用 5432（`Up 8 days (healthy)`），全程未改动；compose 内 `postgres:16-alpine` 仅在容器网络监听，数据落独立卷 `toonflow_postgresData`，无宿主端口映射。服务器 `data/` 在 clone 后为空，首次启动由应用自行初始化，未搬入本机测试数据。
+
+### 1. 构建期发现并修复的真实缺陷
+
+| # | 现象 | 根因 | 修复 |
+| --- | --- | --- | --- |
+| 1 | `invalid reference format: repository name (library/toonflow-agentRuntime) must be lowercase` | 服务名 `agentRuntime` 含大写，Compose 派生镜像名非法 | `compose.yaml` 为该服务显式指定 `image: toonflow-agent-runtime:local`，服务名与内部 DNS 不变 |
+| 2 | `failed to resolve ... docker.io/docker/dockerfile:1 ... EOF` | 两个 Dockerfile 首行 `# syntax=docker/dockerfile:1` 强制 BuildKit 拉取 frontend，服务器 Docker Hub 不可达 | 改用 BuildKit 内置 frontend，首行替换为说明注释 |
+| 3 | `Could not resolve ./app.vue in src/main.ts` | git 树为 `apps/web/src/App.vue`，`main.ts` 引用 `./app.vue`；Windows `core.ignorecase=true` 掩盖大小写差异，Linux 必然失败 | 在大小写敏感的 Linux 上 `git mv App.vue app.vue`；内容 blob 与本机工作区 hash 一致（`b513b1b…`），无漏提交；全仓库扫描仅此 1 处大小写不匹配 |
+| 4 | `Could not resolve ../../../../agentRuntime/src/lib/documentFormats` | webBuild 阶段只拷 `apps/agentRuntime/package.json`，未拷跨包复用的 `src/` | `apps/server/Dockerfile` 在 `RUN bun install` 之后补 `COPY apps/agentRuntime/src ./apps/agentRuntime/src`（置于依赖安装之后以保留缓存层）；按构建上下文 COPY 集合全量扫描，补齐后未解析导入为 0 |
+| 5 | `bun install --frozen-lockfile` 有 4 个包 `ConnectionRefused`（`@tiptap/extension-list`、`@vue-flow/core`、`lodash-es`、`@lobehub/icons-static-svg`） | `bun.lock` 中 883 个 tarball URL 全部硬编码 `registry.npmmirror.com`，该源在服务器上对部分包不可用；同包在 `registry.npmjs.org` 实测 200 | 引入可选构建参数 `BUN_TARBALL_REGISTRY`（`compose.yaml` 的 `build.args` + 两个 Dockerfile 的 `ARG`，`.env.example` 有说明），部署时按需指向可达源；默认不设置时按 lock 原样下载，**仓库 `bun.lock` 零改动** |
+
+### 2. 部署环境准备（服务器本地，不改仓库、不进提交）
+
+- `maven:3.9-eclipse-temurin-21` 浮动标签本地缺失：用已有的 `maven:3.9.11-eclipse-temurin-21`（Maven 3.9.11 / JDK 21.0.9）打标签，并预置阿里云 Maven 镜像 `settings.xml` 到该本地基础镜像，解决首次 `dependency:go-offline` 在 Central 直连下静默卡死 11 分钟的问题；配置后 `BUILD SUCCESS`（go-offline 2:41、package 10.17s）。
+- `oven/bun:1.3.14`、`postgres:16-alpine`、`eclipse-temurin:21-jre-jammy` 基础镜像服务器本地已有，构建探针验证 BuildKit 可离线解析本地镜像、未访问 registry。
+- 容器未注入宿主 `mihomo` 7897 代理（该代理 TLS 握手失败，故不使用）；apt 走 `cn.archive.ubuntu.com`，npm 与 Maven 走各自可达源。
+
+### 3. 验收断言结果（全部通过）
+
+| 断言 | 实测证据 |
+| --- | --- |
+| `docker compose up --build -d --wait` 一键拉起、三容器 healthy | 干净仓库复跑 `COMPOSE_EXIT=0`；`toonflow-postgres-1`、`toonflow-server-1`、`toonflow-agentRuntime-1` 均 `healthy`，`FailingStreak=0`，健康检查日志 `ExitCode=0` |
+| 端口边界 | 仅 `127.0.0.1:3000->3000/tcp` 发布；agentRuntime `3001/tcp`、compose postgres `5432/tcp` 均为容器网络端口，宿主未新增监听 |
+| 前端由 Spring Boot 静态托管 | `curl http://127.0.0.1:3000/` → `200` / `text/html;charset=UTF-8` / 2879 字节，HTML 含 `/assets/index-D0-Q-RxR.js` |
+| Flyway 自动初始化 6 张核心表 | 日志 `Database: jdbc:postgresql://postgres:5432/toonflow (PostgreSQL 16.15)` → `Migrating schema "public" to version "1 - initSchema"` → `Successfully applied 1 migration`；`\dt` 列出 6 张业务表（`sys_setting`、`sys_personalization`、`ai_language_provider`、`ai_media_provider`、`skill_meta`、`workspace_project`）加 `flyway_schema_history` 共 7 行；history 表 `version=1 success=t` |
+| `DataSnapshotSyncService` 启动对账 + 初始快照 | 启动即 `event=snapshot_file_repaired file=settings.json revision=a1e00d9c…` 与 `event=snapshot_reconciliation_succeeded generation=1 repairedFiles=1 pending=false`；60s 周期对账持续成功（观测到 generation=15）；`data/` 生成 `settings.json`（101 字节，含 `settings.customProviders`/`toolConfigs`/`disabledSkills`）、`providers/`、`memories/` 目录 |
+| Java → Bun 携带 `X-Toonflow-Internal-Token` | 从 server 容器直连 `agentRuntime:3001/api/ai/media/models`：带正确 token `200`、不带 `403`、错误 token `403`；经 Java 网关 `GET /api/ai/media/models` → `200` / `{"code":200,"data":[],"message":"成功"}`；`internal_token_len=64` |
+| 健康检查内置断言 | server 健康检查覆盖 `test -s /app/data/settings.json` + `/` + `/api/settings/get` + `/api/ai/media/models`；agentRuntime 健康检查内含不带 token 必须返回 `403` 的断言，两者均稳定 `ExitCode=0` |
+| 其他网关接口与密钥 | `GET /api/settings/get` → `200` / `{"code":200,"data":{},"message":"成功"}`；`.env` 被忽略、`git status` 不含 `.env`，无硬编码密钥进入源码或提交 |
+
+### 4. 如实登记的偏差与已知限制
+
+- **宿主 PG 版本**：任务背景记为 PostgreSQL 18，实测宿主容器镜像为 `postgres:16-alpine`（`show server_version` = `16.15`）；compose 内 PG 同为 16.15。两者互相独立，宿主 PG 未被改动，未做任何升级或写入。
+- **`\dt` 行数**：7 行 = 6 张核心业务表 + Flyway 元数据表 `flyway_schema_history`，与 Do「6 张核心表」一致。
+- **初始快照范围**：空库启动时只落 `settings.json` 与两个空目录；`memories/memory.md`、`data/AGENTS.md` 因库中无个性化正文未生成（符合 `reconcile()` 对缺失文档走删除分支的实现），不视为对账失败。
+- **`SPRING_APPLICATION_JSON`**：容器内该变量文本为 `{"toonflow":{"agent-runtime":{"url":"${TOONFLOW_AGENT_RUNTIME_URL}"}}}`（Compose `$$` 转义保留占位符），由 Spring 在运行时解析环境变量；网关 200 证明解析生效，未改契约。
+- **远程访问开关**：按最小暴露原则保持 `TOONFLOW_BIND_ADDRESS=127.0.0.1`，未触发 `0.0.0.0` 路径（该分支本轮未实测）；如需从 Windows 局域网访问，改 `.env` 后重新 `docker compose up -d` 即可。
+- **构建前置条件**：该服务器 Docker Hub / GitHub 不可达，一键构建依赖本地已缓存的四个基础镜像与可达的 npm / Maven 镜像源；这些是部署环境准备，不是仓库缺陷，`bun.lock` 与 API 契约均保持基线不变。
+- **无新增 API 契约偏差**：本轮未改动 `docs/apiContract.md` 任何内容；`/api/ai/media/models` 在空库返回空数组属正常路径。
+
+### 5. 结论
+
+**DoD① 达成**：干净仓库 + 已配置镜像源的服务器上，`docker compose up --build -d --wait` 一键拉起三容器并全部 healthy（复跑 `COMPOSE_EXIT=0`；`bun.lock` 构建前后均为 883 个 npmmirror URL、零改动）。
+**DoD② 达成**：启动日志清晰输出 PostgreSQL Flyway 迁移 → `data/` 快照启动对账成功记录。
+**黄金用例步骤 1 的 compose 启动前提闭环**，首轮记录中「本机没有可用 Docker，未执行 Compose 容器验收」的限制予以解除。终态三容器保持在线与 healthy，`.env` 未入库。
+
 ## 2026-11-07 第三轮：黄金场景补全与收官（最新）
 
 环境：本地全链路——仓库自带 PostgreSQL（127.0.0.1:54329，库 `toonflow`）、Java 网关 3000、Bun Runtime 3001、web 构建产物 + 静态代理 5173、本机 ComfyUI 8188（图/视频/音频三供应商均直连 8188，Breeze TTS 由 ComfyUI 直接加载）。数据根统一为仓库 `data/`（修复了 10-31 隔离验收遗留的 `TOONFLOW_DATA_DIR=data/localDevelopment` 配置漂移）。禁 Mock、禁测试脚本文件；UI 断言用 playwright-core + chromium-1208 驱动真实浏览器，驱动脚本置于被 git 忽略的 `.workbuddy/uiDriver/`。
