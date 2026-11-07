@@ -40,7 +40,8 @@ const rendererError = ref("");
 const canvasTools = new Set(["getCanvas", "findCanvasNodes", "getCanvasNodes", "getCanvasEdges", "getNodeTools", "addCanvas", "switchCanvas", "renameCanvas", "addNode", "deleteNodes", "moveNodes", "renameNodes", "connectNodes", "deleteEdges", "selectNodes", "arrangeCanvas", "fitCanvas", "nodeTools"]);
 watch(() => [tool.name, tool.question?.callId] as const, ([name]) => {
   rendererError.value = "";
-  renderer.value = name === "askUser" ? questionCard : canvasTools.has(name) ? nodeFocusCard : undefined;
+  // ACT: 媒体生成等工具会在内部通过 askUser 通道请求确认，问题卡片必须挂到发起调用的工具上。
+  renderer.value = name === "askUser" || tool.question?.callId ? questionCard : canvasTools.has(name) ? nodeFocusCard : undefined;
 }, { immediate: true });
 onErrorCaptured(error => {
   if (!renderer.value) return;
