@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# 使用 BuildKit 内置 frontend，避免离线环境拉取 docker/dockerfile:1
 FROM oven/bun:1.3.14
 WORKDIR /app
 RUN apt-get update \
@@ -9,7 +9,11 @@ COPY patches ./patches
 COPY packages ./packages
 COPY apps/web/package.json ./apps/web/package.json
 COPY apps/agentRuntime ./apps/agentRuntime
-RUN bun install --frozen-lockfile
+ARG BUN_TARBALL_REGISTRY=""
+# 可选：离线/内网部署时把 bun.lock 锁定的 tarball 源改写为可达镜像源，仓库锁文件保持不变。
+RUN if [ -n "$BUN_TARBALL_REGISTRY" ]; then \
+      sed -i "s|https://registry.npmmirror.com|$BUN_TARBALL_REGISTRY|g" bun.lock; \
+    fi && bun install --frozen-lockfile
 ENV NODE_ENV=production
 ENV TOONFLOW_DATA_DIR=/app/data
 ENV TOONFLOW_AGENT_RUNTIME_PORT=3001

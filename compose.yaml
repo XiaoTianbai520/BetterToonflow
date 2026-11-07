@@ -20,6 +20,8 @@ services:
     build:
       context: .
       dockerfile: apps/server/Dockerfile
+      args:
+        BUN_TARBALL_REGISTRY: ${BUN_TARBALL_REGISTRY:-}
     init: true
     restart: unless-stopped
     depends_on:
@@ -55,9 +57,13 @@ services:
       start_period: 60s
 
   agentRuntime:
+    # 服务名含大写字母，显式指定小写镜像名以满足 Docker 仓库命名规则
+    image: toonflow-agent-runtime:local
     build:
       context: .
       dockerfile: apps/agentRuntime/Dockerfile
+      args:
+        BUN_TARBALL_REGISTRY: ${BUN_TARBALL_REGISTRY:-}
     init: true
     restart: unless-stopped
     # 不依赖 server 的健康状态，避免 server 的端到端健康检查形成循环依赖。
