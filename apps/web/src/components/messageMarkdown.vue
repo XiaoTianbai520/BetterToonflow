@@ -24,12 +24,33 @@
 import { computed, h } from "vue";
 import { Markdown, COMPONENT_RENDERERS, parseMarkdownIntoBlocks } from "vue-stream-markdown";
 import { MarkdownAstParser, postnormalize, type DefinitionNode, type ParsedNode, type SyntaxTree } from "@markmend/ast";
-import type { CodeOptions, ImageNodeRendererProps, LinkNodeRendererProps, ShikiOptions } from "vue-stream-markdown";
+import type { CodeOptions, ImageNodeRendererProps, LinkNodeRendererProps, LocaleConfig, ShikiOptions } from "vue-stream-markdown";
 import "vue-stream-markdown/index.css";
 import "vue-stream-markdown/theme.css";
 import markdownOverlays from "./markdownOverlays";
 import markdownImage from "./markdownImage.vue";
-import { markdownLocale } from "@/lib/i18n";
+
+// ACT: 只固定 Markdown 控件文案，用户输入和模型生成的正文原样显示。
+const markdownLocale: LocaleConfig = {
+  button: {
+    zoomIn: "放大", zoomOut: "缩小", resetZoom: "重置缩放",
+    preview: "预览", source: "代码", collapse: "折叠",
+    copy: "复制", copied: "已复制", download: "下载",
+    minimize: "最小化", maximize: "最大化", flipY: "垂直翻转",
+    flipX: "水平翻转", rotateLeft: "向左旋转", rotateRight: "向右旋转",
+    previous: "上一个", next: "下一个", back: "返回",
+    confirm: "确认", cancel: "取消",
+  },
+  error: {
+    vanilla: "错误", image: "图片加载失败", mermaid: "Mermaid 渲染失败",
+    katex: "KaTeX 渲染失败", harden: "已拦截",
+  },
+  link: {
+    title: "打开外部链接？", description: "你即将访问外部网站",
+    copy: "复制链接", open: "打开链接",
+  },
+  dialog: { fullscreen: "全屏预览", imagePreview: "图片预览" },
+};
 
 const { content, streaming = false, codeOptions, directory } = defineProps<{ content: string; streaming?: boolean; codeOptions?: CodeOptions; directory?: string }>();
 const renderImage = (image: ImageNodeRendererProps) => h(markdownImage, { image, directory: directory! });
