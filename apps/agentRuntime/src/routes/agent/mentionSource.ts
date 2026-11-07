@@ -35,6 +35,16 @@ export default router.get("/", validateFields(shape, "query"), async (req, res) 
         result = await u.mentionFiles.storedMentionOutput(directory, args.canvasId, args.nodeId, args.operation === "selectCanvas" ? args.outputId : undefined);
       }
     }
+    if (["canvases", "outputs"].includes(args.operation) && Array.isArray(result)) {
+      const offset = Number(args.cursor ?? 0);
+      if (!Number.isSafeInteger(offset) || offset < 0) throw Object.assign(new Error("分页游标无效"), { status: 400 });
+      const query = args.query?.trim().toLowerCase() ?? "";
+      const items = result.filter(item => !query || String(item.name).toLowerCase().includes(query));
+      const end = offset + (args.limit ?? 20);
+      result = { items: items.slice(offset, end), nextCursor: end < items.length ? String(end) : null };
+    } else if (["nodes", "assets"].includes(args.operation) && result && typeof result === "object") {
+      result = { ...result, nextCursor: (result as { nextCursor?: string }).nextCursor ?? null };
+    }
     controller.signal.throwIfAborted();
     res.set("Cache-Control", "no-store").json(success(result));
   } finally { res.off("close", cancel); }

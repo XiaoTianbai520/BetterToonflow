@@ -56,8 +56,6 @@ export function createCanvasContext(cwd: string, canvas: CanvasInfo, send: (even
 
 export function finishCanvasCall(cwd: string, callId: string, response: CanvasResult) {
   const pending = pendingCalls.get(callId);
-  // 超时、取消或完成后仍可能收到回传，幂等忽略，避免中断整轮对话。
-  if (!pending) return;
-  if (pending.cwd !== cwd) throw Object.assign(new Error("画布调用不存在或已结束"), { status: 404 });
+  if (!pending || pending.cwd !== cwd) throw Object.assign(new Error("画布调用不存在或已结束"), { status: 404 });
   pending.finish(response);
 }

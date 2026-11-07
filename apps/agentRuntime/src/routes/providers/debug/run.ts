@@ -7,7 +7,7 @@ export default Router().post("/", validateFields({
   ...u.providerDebug.providerDebugSchema,
   request: z.record(z.string(), z.json()),
 }), async (req, res) => {
-  res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store, no-transform", "X-Accel-Buffering": "no" });
+  res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" });
   res.flushHeaders();
   const controller = new AbortController();
   const heartbeat = setInterval(() => {

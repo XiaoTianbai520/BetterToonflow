@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { error } from "./responseFormat";
-import { t, translateMessage, validationOptions } from "./messages";
+import { translateMessage, validationOptions } from "./messages";
 
 export function internalAuthentication(req: Request, res: Response, next: NextFunction) {
   const token = process.env.TOONFLOW_INTERNAL_TOKEN;
@@ -22,8 +22,7 @@ export function validateFields(
     const data = req[source];
     const parseResult = schema.safeParse(data, validationOptions());
     if (!parseResult.success) {
-      const errors = parseResult.error.issues.map((issue) => t`字段 ${issue.path.join(".")} ${translateMessage(issue.message)}`);
-      console.error(errors);
+      const errors = parseResult.error.issues.map((issue) => ({ ...issue, message: translateMessage(issue.message) }));
       return res.status(400).json(error("参数错误", errors));
     }
     next();

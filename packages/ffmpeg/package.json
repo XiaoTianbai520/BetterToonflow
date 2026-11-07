@@ -16,7 +16,6 @@
   "dependencies": {
     "@toonflow/file": "workspace:*",
     "eventsource-parser": "3.1.1",
-    "@renmu/fluent-ffmpeg": "2.3.3",
-    "@toonflow/i18n": "workspace:*"
+    "@renmu/fluent-ffmpeg": "2.3.3"
   }
 }

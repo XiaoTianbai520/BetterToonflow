@@ -59,7 +59,7 @@ public class ProxyRequests {
         return value;
     }
 
-    /** 转发路径与原始查询串，查询串保持原样交由 URI 构造器编码。 */
+    /** 转发已经转义的原始路径与查询串，不重复编码。 */
     public String target(HttpServletRequest request) {
         String query = request.getQueryString();
         String path = request.getRequestURI();

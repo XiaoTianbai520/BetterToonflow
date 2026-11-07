@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -88,15 +87,11 @@ public class AgentRuntimeClient {
         return builder.build();
     }
 
-    /** 查询串按原始文本交给 URI 构造器编码，避免已转义字符被二次转义。 */
+    /** Servlet 提供的路径和查询串已经转义，按原始 URI 解析以免把 % 再编码成 %25。 */
     private URI target(String pathAndQuery) {
-        int separator = pathAndQuery.indexOf('?');
-        String path = separator < 0 ? pathAndQuery : pathAndQuery.substring(0, separator);
-        String query = separator < 0 ? null : pathAndQuery.substring(separator + 1);
-        URI base = URI.create(baseUrl + path);
         try {
-            return new URI(base.getScheme(), base.getAuthority(), base.getPath(), query, null);
-        } catch (URISyntaxException exception) {
+            return URI.create(baseUrl + pathAndQuery);
+        } catch (IllegalArgumentException exception) {
             throw new BusinessException(400, "参数错误", null);
         }
     }

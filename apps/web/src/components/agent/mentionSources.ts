@@ -165,6 +165,17 @@ export function useMentionSources(getDirectory: () => string | undefined) {
     return data.data;
   }
 
+  async function requestItems<T>(operation: string, args: Record<string, unknown>, signal?: AbortSignal) {
+    const items: T[] = [];
+    let cursor: string | null | undefined;
+    do {
+      const page = await request<{ items: T[]; nextCursor: string | null }>(operation, { ...args, limit: 50, cursor: cursor ?? undefined }, signal);
+      items.push(...page.items);
+      cursor = page.nextCursor;
+    } while (cursor);
+    return items;
+  }
+
   return {
     currentCanvasId: () => getCanvasSource?.()?.currentCanvasId() ?? "",
     async canvases(signal?: AbortSignal) {
@@ -173,7 +184,7 @@ export function useMentionSources(getDirectory: () => string | undefined) {
       const canvases = await getCanvasSource?.()?.canvases(signal);
       signal?.throwIfAborted();
       if (directory !== getDirectory()) throw new Error("工作区已切换，请重新选择");
-      return canvases ?? request<{ id: string; name: string }[]>("canvases", {}, signal);
+      return canvases ?? requestItems<{ id: string; name: string }>("canvases", {}, signal);
     },
     async nodes({ canvasId, ...options }: MentionQuery & { canvasId: string }) {
       options.signal?.throwIfAborted();
@@ -190,7 +201,7 @@ export function useMentionSources(getDirectory: () => string | undefined) {
     },
     async outputs({ canvasId, nodeId, signal }: { canvasId: string; nodeId: string; signal?: AbortSignal }) {
       signal?.throwIfAborted();
-      return getCanvasSource?.()?.outputs(canvasId, nodeId) ?? request<MentionOutput[]>("outputs", { canvasId, nodeId }, signal);
+      return getCanvasSource?.()?.outputs(canvasId, nodeId) ?? requestItems<MentionOutput>("outputs", { canvasId, nodeId }, signal);
     },
     assets({ signal, ...options }: MentionQuery & { path?: string } = {}) {
       return request<MentionPage<MentionAsset>>("assets", options, signal);

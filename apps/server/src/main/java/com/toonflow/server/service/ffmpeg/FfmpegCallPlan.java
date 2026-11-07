@@ -276,7 +276,7 @@ public final class FfmpegCallPlan {
             args.add("-i");
             args.add(input.source);
         }
-        if (outputs.stream().anyMatch(output -> output.target != null)) {
+        if (outputs.stream().anyMatch(output -> output.target != null) && !hasOverwriteFlag()) {
             args.add("-y");
         }
         args.addAll(complexFilters);
@@ -304,6 +304,16 @@ public final class FfmpegCallPlan {
     private void applyInput(String source) {
         Input input = new Input(source);
         inputs.add(currentInput = input);
+    }
+
+    /** 调用方显式给出 -y / -n 时不再注入默认覆盖参数，避免同时出现 -y 与 -n 直接失败。 */
+    private boolean hasOverwriteFlag() {
+        for (Output output : outputs) {
+            if (output.options.contains("-y") || output.options.contains("-n")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Input currentInput() {

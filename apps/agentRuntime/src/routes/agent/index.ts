@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { CanvasInfo } from "@/tools/types";
 import type { AgentEvent } from "@/agent/runtime/types";
 import { validateFields } from "@/lib/middleware";
+import { error } from "@/lib/responseFormat";
 import u from "@/utils";
 import { translateError, translateMessage } from "@/lib/messages";
 
@@ -28,6 +29,11 @@ const inputSchema = z.object({
 
 export default Router().post("/", validateFields(inputSchema.shape), async (req, res) => {
   const { directory, canvas, ...options } = req.body as z.infer<typeof inputSchema>;
+  // 空提示词仅在带附件、@ 引用或重发历史消息时成立，其余情况按契约在建连前返回 400。
+  if (!options.prompt && !options.attachments?.length && !options.mentions?.length && !options.resendFrom) {
+    res.status(400).json(error("参数错误", null));
+    return;
+  }
   const cwd = await u.workspace.resolveWorkspace(req, directory);
   res.set({ "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no" });
   res.flushHeaders();
@@ -49,10 +55,10 @@ export default Router().post("/", validateFields(inputSchema.shape), async (req,
   req.socket.once("close", close);
   try {
     await u.agent.run({ ...options, cwd, canvas: bridge?.context, question: questions.context, signal: controller.signal, onCancel: close }, send);
-    send({ type: "done" });
   } catch (error) {
     send({ type: "error", message: error instanceof Error ? translateError(error) : translateMessage("Agent 运行失败") });
   } finally {
+    send({ type: "done" });
     clearInterval(heartbeat);
     res.off("close", close);
     req.off("aborted", close);

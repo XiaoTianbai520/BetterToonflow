@@ -157,6 +157,18 @@ function parseProvider(source: string) {
   let module: ReturnType<typeof parse>;
   try { module = parse(source, { sourceType: "module", plugins: ["typescript"] }); }
   catch (err) { return invalid(t`供应商 TypeScript 语法错误：${err instanceof Error ? err.message : String(err)}`); }
+  const forbiddenNames = new Set(["process", "require", "fs", "Bun", "Deno", "eval", "Function", "global"]);
+  const nodes: unknown[] = [module.program];
+  while (nodes.length) {
+    const node = nodes.pop();
+    if (!node || typeof node !== "object") continue;
+    const record = node as Record<string, unknown>;
+    if (["ImportDeclaration", "ImportExpression", "Import"].includes(String(record.type))
+      || (record.type === "Identifier" && forbiddenNames.has(String(record.name)))) {
+      invalid("供应商不能导入模块或使用 process、require、Bun、eval 等宿主及动态执行 API");
+    }
+    nodes.push(...Object.values(record).filter(value => value && typeof value === "object").flat());
+  }
   const exported = module.program.body.find(item => item.type === "ExportDefaultDeclaration");
   if (!exported || exported.type !== "ExportDefaultDeclaration") {
     const legacy = module.program.body.some(item => {
