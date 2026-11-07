@@ -1119,9 +1119,9 @@ flowchart LR
 
 #### 3.6.2 `GET /api/ai/media/models`
 - **服务归属**：Spring Boot 3 → Bun `agentRuntime`
-- **用途**：获取所有已启用媒体供应商下的可用媒体模型列表及其参数约束规则（`MediaRules`，供画布图片/视频/音频生成节点渲染动态表单）。
+- **用途**：获取所有已启用媒体供应商下的可用媒体模型列表及其扁平参数约束字段（供画布图片/视频/音频生成节点渲染动态表单）。
 - **请求参数**：无。
-- **响应结构（`200 OK`）**：`data: MediaModelItem[]`（包含 `providerId`、`providerLabel`、`modelId`、`label`、`type: "image" | "video" | "audio"`、`rules`）。
+- **响应结构（`200 OK`）**：`data: MediaModelItem[]`（每项包含 `providerId`、`providerLabel`、`modelId`、`label`、`type: "image" | "video" | "audio"`、`supportsPrice`，以及按类型可选的扁平约束字段：`mode`、`durationResolutionMap`、`audio`（视频模型），`imageSizes`、`imageRatios`（图片模型），`voices`（音频模型）；节点表单直接消费扁平字段，不返回嵌套 `rules` 键，对应源码 [`media/generation.ts`](file:///c:/Users/c1338/Desktop/workplace/toonflow/Toonflow-app/apps/agentRuntime/src/media/generation.ts) 的 `listMediaModels`）。
 
 #### 3.6.3 `POST /api/ai/media/generate`
 - **服务归属**：Spring Boot 3 → Bun `agentRuntime`

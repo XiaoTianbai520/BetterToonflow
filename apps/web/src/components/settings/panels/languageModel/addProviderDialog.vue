@@ -60,7 +60,7 @@ import messageMarkdown from "@/components/messageMarkdown.vue";
 import type { Column } from "element-plus";
 import { saveSettings, type CustomProviderModel } from "@/stores/settings";
 
-const builtinProviders = languageProviders.filter(provider => provider.id.toLowerCase() !== "tfrouter");
+const builtinProviders = languageProviders;
 const visible = defineModel<boolean>({ default: false });
 const selectedProvider = ref<string>(builtinProviders[0]?.id ?? "");
 const formApi = shallowRef<Api>();

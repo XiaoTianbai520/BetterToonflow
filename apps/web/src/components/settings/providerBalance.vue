@@ -23,9 +23,9 @@
 import { IconRefresh } from "@tabler/icons-vue";
 import { useMediaProviderBalance } from "@/stores/settings";
 
-// ACT: 保留原组件文件入口供工作台迁移；只有传入明确的第三方 providerId 才查询余额。
+// ACT: 通用第三方供应商余额卡片；传入明确的 providerId 才查询余额。
 const props = withDefaults(defineProps<{
-  providerId?: string; visible?: boolean; apiKey?: string; saveApiKey?: (key: string) => Promise<void>;
+  providerId?: string; visible?: boolean;
 }>(), { providerId: "", visible: true });
 const { snapshot, loading, error, status, retryCount, refresh } = useMediaProviderBalance(() => props.providerId, () => props.visible);
 const numberFormat = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 6 });

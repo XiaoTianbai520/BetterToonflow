@@ -49,7 +49,7 @@ import { IconPlus, IconSettings, IconEdit, IconTrash, IconDownload } from "@tabl
 import type { MediaProvider } from "./types";
 import { saveSettings } from "@/stores/settings";
 import { invalidateNodeModels } from "@/nodes/nodeCore/nodeAi";
-import providerBalance from "../../tfAccount.vue";
+import providerBalance from "../../providerBalance.vue";
 
 const providerDebugDialog = defineAsyncComponent(() => import("../developer/providerDebugDialog.vue"));
 const debugVisible = ref(false);
@@ -57,7 +57,7 @@ const { visible = true } = defineProps<{ visible?: boolean }>();
 const mediaProviderDialog = shallowRef<Component>();
 const editProviderDialog = shallowRef<Component>();
 const providers = ref<MediaProvider[]>([]);
-const sortedProviders = computed(() => providers.value.filter(provider => provider.id.toLowerCase() !== "tfrouter"));
+const sortedProviders = computed(() => providers.value);
 const loaded = ref(false);
 const providerDialogVisible = ref(false);
 const editorVisible = ref(false);

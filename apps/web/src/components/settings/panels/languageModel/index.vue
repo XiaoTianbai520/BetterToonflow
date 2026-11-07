@@ -53,7 +53,7 @@ const customProviderDialogVisible = ref(false);
 const editingProvider = ref<CustomProvider>();
 const deletingId = ref("");
 const fetchingId = ref("");
-const sortedProviders = computed(() => customProviders.value.filter(provider => provider.id.toLowerCase() !== "tfrouter"));
+const sortedProviders = computed(() => customProviders.value);
 
 function getProviderVersion(provider: CustomProvider) {
   const version = languageProviders.find(item => item.id.toLowerCase() === provider.id.toLowerCase())?.version ?? provider.version;
