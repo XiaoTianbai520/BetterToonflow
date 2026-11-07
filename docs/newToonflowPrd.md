@@ -212,7 +212,7 @@ flowchart TB
     ConfigSvc -->|原子同步配置快照| DataDir
     WorkspaceSvc & FfmpegSvc <--> WorkDir & DataDir
     SkillSvc <--> DataDir
-    ProxySvc -->|本地内部 HTTP/Stream 调用 (TOONFLOW_INTERNAL_TOKEN 鉴权)| AgentEngine & MediaSandbox
+    ProxySvc -->|"本地内部 HTTP/Stream 调用 (TOONFLOW_INTERNAL_TOKEN 鉴权)"| AgentEngine & MediaSandbox
     AgentEngine --> BuiltinTools & SkillLoader & MediaSandbox
     AgentEngine & MediaSandbox <--> DataDir & WorkDir
 ```

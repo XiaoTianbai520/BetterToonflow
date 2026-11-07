@@ -186,6 +186,12 @@ async function renameJsonFile(path: string, target: string) {
    - 使用更新方法前，确认字段为 `null` 时的更新语义，避免意外覆盖数据或漏更新。
    - 不要假设项目启用了逻辑删除、自动填充、MyBatis-Plus 内置乐观锁插件、多租户或数据权限插件（注意：本项目的配置/文档乐观锁采用基于 64 位小写十六进制 SHA-256 `revision` 的 CAS 校验，不匹配时返回 HTTP `409 Conflict` 且 `data: { code: "ESTALE" }`）。
    - 涉及数据库结构变更时，必须同步更新 Flyway SQL 迁移脚本与基准文档，不得只改 Java 实体而忽略真实 DDL，也不得执行未经确认的破坏性数据操作。
+4. **测试与联调使用的数据库（服务器 PostgreSQL）**：
+   - 本地开发验证、接口联调一律连接服务器上的 PostgreSQL，不另建 SQLite / H2 / 内嵌数据库等替代数据源，也不要求在本机安装 PostgreSQL；
+   - 连接参数：主机 `192.168.1.102`，端口 `5432`，数据库 `toonflow`，用户 `root`，密码 `123456`；
+   - 对应 `application.yml` 的 `spring.datasource`：`url` 默认 `jdbc:postgresql://192.168.1.102:5432/toonflow`，`username` 默认 `root`，`password` 取环境变量 `TOONFLOW_DB_PASSWORD`（本地验证时设为上述密码，不要硬编码进配置文件）；
+   - 该口令属内网测试库凭据，是第 3 节第 7 条「敏感值不入源码/日志」的唯一显式例外：只允许出现在本文件与本地环境变量中，禁止写入业务源码、日志、示例数据、接口响应或对外文档；
+   - 验证涉及 Flyway 迁移、写库事务或快照同步时，使用独立的测试库或测试表前缀，避免污染 `toonflow` 库中的真实配置数据。
 
 ### 5. 流式网关透传与服务间内部鉴权规范
 
