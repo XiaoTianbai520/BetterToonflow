@@ -8,6 +8,7 @@
    - `apps/web`：Vue 3 + TypeScript + Vite + Pinia + Vue Flow + Dockview 前端工作台（源码内聚 7 大画布节点、5 大文档扩展与 2 张 Agent 工具卡片）。
    - `apps/server`：JDK 21（开启虚拟线程）+ Spring Boot 3 + MyBatis-Plus + PostgreSQL 16 + Flyway 核心业务后端与对外唯一网关（监听端口 `3000`，直接实现 41 个接口，流式透传/协同转发 24 个接口至 `apps/agentRuntime`）。
    - `apps/agentRuntime`：Bun + TypeScript + Express + Pi Agent SDK 智能体与多模态媒体沙箱运行时（仅监听本机回环 `127.0.0.1:3001`，源码内聚 11 大 Agent 工具包与 `.ts` 媒体供应商 `node:vm` 沙箱，承载 24 个内部接口）。
+   - **唯一开发数据库约定**：所有开发、本地启动、接口联调与端到端验证**一律只使用远程服务器 PostgreSQL（`192.168.1.102:5432`，数据库 `toonflow`）**；**严禁 AI 启动、连接或依赖任何本机数据库**（包括 `127.0.0.1:54329`、`localhost:5432`、`data/localDevelopment/postgres`、`.tmp/localDevelopment` 中的本地 Postgres 可执行文件、以及 SQLite / H2 / 内嵌库），详细连接与隔离规范见下方「Java Server 开发规范 → 4.4」。
 2. **权威基准约束**：
    - **产品需求唯一基准**：`docs/newToonflowPrd.md`（`C:\Users\c1338\Desktop\workplace\toonflow\Toonflow-app\docs\newToonflowPrd.md`，`v1.0.0-baseline`）——产品范围（6W 约束）、业务规则、数据库模型与架构边界严格遵循该文档；
    - **契约基准**：`docs/apiContract.md`（`C:\Users\c1338\Desktop\workplace\toonflow\Toonflow-app\docs\apiContract.md`，`v1.0.0-baseline`）——全量 65 个 API 的路径、HTTP 方法、服务归属、请求/响应 Schema、流式协议（SSE / NDJSON / 前导 `\n` 保活 Chunked JSON）、SHA-256 `revision` 乐观锁与错误码严格遵循该接口契约；
@@ -186,12 +187,12 @@ async function renameJsonFile(path: string, target: string) {
    - 使用更新方法前，确认字段为 `null` 时的更新语义，避免意外覆盖数据或漏更新。
    - 不要假设项目启用了逻辑删除、自动填充、MyBatis-Plus 内置乐观锁插件、多租户或数据权限插件（注意：本项目的配置/文档乐观锁采用基于 64 位小写十六进制 SHA-256 `revision` 的 CAS 校验，不匹配时返回 HTTP `409 Conflict` 且 `data: { code: "ESTALE" }`）。
    - 涉及数据库结构变更时，必须同步更新 Flyway SQL 迁移脚本与基准文档，不得只改 Java 实体而忽略真实 DDL，也不得执行未经确认的破坏性数据操作。
-4. **测试与联调使用的数据库（服务器 PostgreSQL）**：
-   - 本地开发验证、接口联调一律连接服务器上的 PostgreSQL，不另建 SQLite / H2 / 内嵌数据库等替代数据源，也不要求在本机安装 PostgreSQL；
+4. **开发、测试与联调唯一使用的数据库（服务器 PostgreSQL，严禁使用本地库）**：
+   - 日常开发、本地启动、接口联调与端到端验证**一律只连接服务器上的 PostgreSQL**；**严禁 AI 启动、连接、读写或依赖任何本机 PostgreSQL 实例**（包括但不限于 `127.0.0.1:54329`、`localhost:5432`、`data/localDevelopment/postgres`、`.tmp/localDevelopment` 中的本机 `postgres.exe`，即使 `.env.local` 或 `start.bat` 中存在本机库配置也不得沿用），也不得另建 SQLite / H2 / 内嵌数据库或本地临时容器数据库；
    - 连接参数：主机 `192.168.1.102`，端口 `5432`，数据库 `toonflow`，用户 `root`，密码 `123456`；
-   - 对应 `application.yml` 的 `spring.datasource`：`url` 默认 `jdbc:postgresql://192.168.1.102:5432/toonflow`，`username` 默认 `root`，`password` 取环境变量 `TOONFLOW_DB_PASSWORD`（本地验证时设为上述密码，不要硬编码进配置文件）；
+   - 对应 `application.yml` 的 `spring.datasource`：`url` 默认 `jdbc:postgresql://192.168.1.102:5432/toonflow`，`username` 默认 `root`，`password` 取环境变量 `TOONFLOW_DB_PASSWORD`（本地开发与验证时显式设为上述密码，不要硬编码进配置文件）；
    - 该口令属内网测试库凭据，是第 3 节第 7 条「敏感值不入源码/日志」的唯一显式例外：只允许出现在本文件与本地环境变量中，禁止写入业务源码、日志、示例数据、接口响应或对外文档；
-   - 验证涉及 Flyway 迁移、写库事务或快照同步时，使用独立的测试库或测试表前缀，避免污染 `toonflow` 库中的真实配置数据。
+   - 验证涉及 Flyway 迁移、写库事务或快照同步等需要隔离的场景时，仍在**同一台服务器 PostgreSQL（`192.168.1.102:5432`）**上使用独立测试库或独立 Schema（验证完毕后及时清理），避免污染 `toonflow` 库中的真实配置数据，严禁因此切回本机数据库。
 
 ### 5. 流式网关透传与服务间内部鉴权规范
 

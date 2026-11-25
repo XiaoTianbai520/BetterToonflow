@@ -6,8 +6,6 @@ title ToonFlow Dev Launcher
 set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 set "ENV_FILE=%ROOT%\.env.local"
-set "PG_BIN=%ROOT%\.tmp\localDevelopment\package\native\bin"
-set "PG_DATA=%ROOT%\data\localDevelopment\postgres"
 
 if /i "%~1"=="stop" goto stop
 
@@ -27,7 +25,9 @@ for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%ENV_FILE%") do (
 )
 
 rem 数据目录必须是绝对路径：相对路径会被各子进程按自己的 cwd 解析
-echo %TOONFLOW_DATA_DIR% | findstr /R "^[A-Za-z]:[/\\]" >nul || set "TOONFLOW_DATA_DIR=%ROOT%\data\localDevelopment"
+echo %TOONFLOW_DATA_DIR% | findstr /R "^[A-Za-z]:[/\\]" >nul || set "TOONFLOW_DATA_DIR=%ROOT%\data"
+if not defined TOONFLOW_DB_URL set "TOONFLOW_DB_URL=jdbc:postgresql://192.168.1.102:5432/toonflow"
+if not defined TOONFLOW_DB_USERNAME set "TOONFLOW_DB_USERNAME=root"
 
 rem 工具/IDE 会注入这两个变量，Spring relaxed binding 会把它们当成 server.port / server.address
 set "SERVER__PORT="
@@ -37,18 +37,24 @@ rem 清掉宿主注入的 Node 钩子：safe-delete 会拦截 vite 的依赖优�
 set "NODE_OPTIONS="
 set "ELECTRON_RUN_AS_NODE="
 
-rem 本地 ComfyUI 必须直连：一旦进程带着 HTTP_PROXY，127.0.0.1:8188 会走代理并返回 502
+rem 本地 ComfyUI 与局域网 PostgreSQL 必须直连：避免走 HTTP_PROXY 返回 502
 set "HTTP_PROXY="
 set "HTTPS_PROXY="
 set "ALL_PROXY="
 set "http_proxy="
 set "https_proxy="
 set "all_proxy="
-set "NO_PROXY=localhost,127.0.0.1,::1"
-set "no_proxy=localhost,127.0.0.1,::1"
+set "NO_PROXY=localhost,127.0.0.1,::1,192.168.1.102"
+set "no_proxy=localhost,127.0.0.1,::1,192.168.1.102"
 
 if not defined TOONFLOW_INTERNAL_TOKEN (
   echo [x] Missing TOONFLOW_INTERNAL_TOKEN in .env.local
+  pause
+  exit /b 1
+)
+
+if not defined TOONFLOW_DB_PASSWORD (
+  echo [x] Missing TOONFLOW_DB_PASSWORD in .env.local
   pause
   exit /b 1
 )
@@ -61,24 +67,18 @@ if not defined BUN_EXE (
 )
 
 echo  data dir : %TOONFLOW_DATA_DIR%
+echo  db url   : %TOONFLOW_DB_URL%
 echo  bun      : %BUN_EXE%
 echo.
 
-rem ---------- 1. PostgreSQL :54329 ----------
-call :port 54329
-if not errorlevel 1 (
-  echo [=] PostgreSQL already running
-) else (
-  echo [^>] starting PostgreSQL ...
-  start "ToonFlow DB :54329" /D "%ROOT%" cmd /k ""%PG_BIN%\postgres.exe" -D "%PG_DATA%" -p 54329"
-  call :wait 54329 30
-  if errorlevel 1 (
-    echo [x] PostgreSQL not ready in 30s
-    pause
-    exit /b 1
-  )
-  echo [ok] PostgreSQL ready
+rem ---------- 1. Check remote PostgreSQL ----------
+call :checkdb
+if errorlevel 1 (
+  echo [x] Remote PostgreSQL unreachable: %TOONFLOW_DB_URL%
+  pause
+  exit /b 1
 )
+echo [ok] Remote PostgreSQL reachable
 
 rem ---------- 2. Bun agentRuntime :3001 ----------
 call :port 3001
@@ -153,13 +153,14 @@ if %_i% GEQ %~2 exit /b 1
 timeout /t 1 /nobreak >nul 2>&1
 goto wait_loop
 
+:checkdb
+rem 校验远程 PostgreSQL TCP 可达（超时 3 秒），不启动本机 PostgreSQL
+powershell -NoProfile -Command "$u = $env:TOONFLOW_DB_URL; if ($u -match '^jdbc:postgresql://([^:/?]+)(?::(\d+))?/') { $h = $matches[1]; $p = if ($matches[2]) { [int]$matches[2] } else { 5432 }; $c = New-Object System.Net.Sockets.TcpClient; $ar = $c.BeginConnect($h, $p, $null, $null); $ok = $ar.AsyncWaitHandle.WaitOne(3000, $false); if ($ok) { try { $c.EndConnect($ar); $c.Close(); exit 0 } catch { exit 1 } } else { $c.Close(); exit 1 } } else { exit 1 }" >nul 2>&1
+exit /b %errorlevel%
+
 :stop
 echo Stopping ToonFlow dev services ...
 for %%P in (3000 3001 5173) do call :killport %%P
-if exist "%PG_BIN%\pg_ctl.exe" (
-  "%PG_BIN%\pg_ctl.exe" -D "%PG_DATA%" -m fast stop >nul 2>&1
-  echo   PostgreSQL -^> stopped
-)
 echo Done.
 timeout /t 2 >nul 2>&1
 exit /b 0
