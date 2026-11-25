@@ -3,8 +3,8 @@ import { z } from "zod";
 export const ratioOptions = ["16:9", "9:16", "1:1", "4:3", "3:4"];
 
 export const toolDefinitions = {
-  getConfig: { name: "getConfig", description: "读取此视频生成节点的当前配置、可选视频模型能力、通用比例及适合当前引用的模式，不含密钥；时长与分辨率须符合 durationResolutionMap", parameters: z.strictObject({}) },
-  setConfig: { name: "setConfig", description: "修改此视频生成节点的模型、时长、分辨率、比例、模式或声音；先用 getConfig 查询能力，providerId 与 modelId 必须同时提供；mode 使用返回的原始字符串或数组，须匹配当前引用；不修改提示词、不启动生成", parameters: z.strictObject({
+  getConfig: { name: "getConfig", description: "读取此视频生成节点的当前配置、可选视频模型能力、通用比例、适合当前引用的模式及 modeSemantics 模式语义说明，不含密钥；时长与分辨率须符合 durationResolutionMap；注意区分 singleImage（单图首帧，必须用单帧画面/上段尾帧，勿接角色设定板）与数组参考模式（参考生视频，用于角色/场景设定图）", parameters: z.strictObject({}) },
+  setConfig: { name: "setConfig", description: "修改此视频生成节点的模型、时长、分辨率、比例、模式或声音；先用 getConfig 查询能力与 modeSemantics，providerId 与 modelId 必须同时提供；mode 使用返回的原始字符串或数组并须匹配当前引用——其中 singleImage/startEndRequired/endFrameOptional/startFrameOptional 为首尾帧锚点模式（singleImage 为单图首帧，必须接入单帧画面或上段尾帧，严禁接入多视角角色设定板），数组模式（如 [\"imageReference:9\", ...]）为参考生视频（用于角色/场景设定图）；不修改提示词、不启动生成", parameters: z.strictObject({
     providerId: z.string().min(1).optional(),
     modelId: z.string().min(1).optional(),
     duration: z.number().positive().optional(),

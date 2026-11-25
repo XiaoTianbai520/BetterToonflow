@@ -41,6 +41,22 @@ export interface CanvasContext extends CanvasInfo {
   call(request: CanvasToolCall, signal?: AbortSignal, toolCallId?: string): Promise<unknown>;
 }
 
+export type CanvasMediaType = "image" | "video" | "audio";
+
+export interface CanvasGenerationGrant {
+  canvasId: string;
+  nodeId: string;
+  mediaType: CanvasMediaType;
+  fingerprint: string;
+  remaining: number;
+}
+
+export interface CanvasAuthorizationScope {
+  grant(entries: Omit<CanvasGenerationGrant, "remaining">[], count?: number): void;
+  consume(canvasId: string, nodeId: string, mediaType: CanvasMediaType, fingerprint: string): boolean;
+  clear(): void;
+}
+
 export interface MediaModel {
   supportsPrice?: boolean;
   providerId: string;
@@ -165,6 +181,7 @@ export interface ToolContext {
   ffmpeg(signal?: AbortSignal): Promise<FfmpegFactory>;
   media?: MediaContext;
   canvas?: CanvasContext;
+  canvasAuthorization?: CanvasAuthorizationScope;
   question?: QuestionContext;
   skills?: SkillContext;
   cwd: string;

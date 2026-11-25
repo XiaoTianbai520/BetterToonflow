@@ -73,6 +73,17 @@ async function jsonRequest(
   return await response.json();
 }
 
+function isPromptInQueue(queue: unknown, promptId: string): boolean | null {
+  if (!queue || typeof queue !== "object") return null;
+  const record = queue as { queue_running?: unknown; queue_pending?: unknown };
+  if (!Array.isArray(record.queue_running) && !Array.isArray(record.queue_pending)) return null;
+  const entries = [
+    ...(Array.isArray(record.queue_running) ? record.queue_running : []),
+    ...(Array.isArray(record.queue_pending) ? record.queue_pending : []),
+  ];
+  return entries.some(entry => Array.isArray(entry) && entry[1] === promptId);
+}
+
 function detectAudio(bytes: Uint8Array) {
   const head = Buffer.from(bytes.subarray(0, 12));
   if (head.subarray(0, 4).toString("ascii") === "RIFF" && head.subarray(8, 12).toString("ascii") === "WAVE")
@@ -313,6 +324,7 @@ export default {
       ],
     },
   ],
+  async getPrice() { return { price: "本地算力", tips: "消耗本机显存、内存与电力，无远程生成接口费用" }; },
   async generateAudio(this: Context, request: AudioRequest) {
     const base = comfyBase(this.config);
     if (!audioModels.includes(request.model as (typeof audioModels)[number])) throw new Error("不支持的 Breeze TTS 模型");
@@ -370,29 +382,47 @@ export default {
     if (signal.aborted) cancel();
 
     try {
+      let missingCount = 0;
       for (;;) {
         signal.throwIfAborted();
         const history = await jsonRequest(this, base, `/history/${promptId}`, signal);
         const record = history[promptId];
-        if (record?.status?.status_str === "error") {
-          const failure = record.status.messages?.find((entry: any) => entry[0] === "execution_error")?.[1];
-          const detail = this.tool.errorMessage(failure?.exception_message ?? record.status.messages);
-          throw new Error(`Breeze 语音生成失败（${promptId}）：${detail}`);
-        }
-        if (record?.status?.completed) {
-          completed = true;
-          const audio = record.outputs?.[saveNode]?.audio?.[0];
-          if (!audio?.filename || audio.type !== "output") throw new Error("ComfyUI 已结束，但未返回音频");
-          const query = new URLSearchParams({ filename: audio.filename, subfolder: audio.subfolder ?? "", type: "output" });
-          const response = await this.tool.fetch(`${base}/view?${query}`, {
-            signal: AbortSignal.any([signal, AbortSignal.timeout(180000)]),
-          });
-          if (!response.ok) throw new Error(`读取生成音频失败：HTTP ${response.status}`);
-          const bytes = new Uint8Array(await response.arrayBuffer());
-          if (bytes.length < 16 || bytes.length > maxMediaBytes) throw new Error("返回的音频为空或超过 100 MB");
-          const probe = detectAudio(bytes);
-          if (!probe) throw new Error("返回的音频格式无效");
-          return [{ mediaType: "audio" as const, type: "binary" as const, data: bytes, mimeType: probe.mime }];
+        if (record) {
+          missingCount = 0;
+          if (record.status?.status_str === "error") {
+            const failure = record.status.messages?.find((entry: any) => entry[0] === "execution_error")?.[1];
+            const detail = this.tool.errorMessage(failure?.exception_message ?? record.status.messages);
+            throw new Error(`Breeze 语音生成失败（${promptId}）：${detail}`);
+          }
+          if (record.status?.completed) {
+            completed = true;
+            const audio = record.outputs?.[saveNode]?.audio?.[0];
+            if (!audio?.filename || audio.type !== "output") throw new Error("ComfyUI 已结束，但未返回音频");
+            const query = new URLSearchParams({ filename: audio.filename, subfolder: audio.subfolder ?? "", type: "output" });
+            const response = await this.tool.fetch(`${base}/view?${query}`, {
+              signal: AbortSignal.any([signal, AbortSignal.timeout(180000)]),
+            });
+            if (!response.ok) throw new Error(`读取生成音频失败：HTTP ${response.status}`);
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            if (bytes.length < 16 || bytes.length > maxMediaBytes) throw new Error("返回的音频为空或超过 100 MB");
+            const probe = detectAudio(bytes);
+            if (!probe) throw new Error("返回的音频格式无效");
+            return [{ mediaType: "audio" as const, type: "binary" as const, data: bytes, mimeType: probe.mime }];
+          }
+        } else {
+          let inQueue: boolean | null = null;
+          try {
+            const queue = await jsonRequest(this, base, "/queue", signal);
+            inQueue = isPromptInQueue(queue, promptId);
+          } catch {
+            signal.throwIfAborted();
+          }
+          if (inQueue === true) {
+            missingCount = 0;
+          } else if (inQueue === false) {
+            missingCount += 1;
+            if (missingCount >= 10) throw new Error(`ComfyUI 任务已丢失或队列被清空（${promptId}）`);
+          }
         }
         await pause(2000, signal);
       }

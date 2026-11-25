@@ -49,7 +49,7 @@ export default Router().post("/", validateFields(inputSchema.shape), async (req,
   const heartbeat = setInterval(() => {
     if (!res.destroyed && !res.writableEnded && !res.writableNeedDrain) res.write("\n");
   }, 20000);
-  const close = () => { clearInterval(heartbeat); bridge?.dispose(); questions.dispose(); controller.abort(); };
+  const close = () => { controller.abort(); clearInterval(heartbeat); bridge?.dispose(); questions.dispose(); };
   res.once("close", close);
   req.once("aborted", close);
   req.socket.once("close", close);

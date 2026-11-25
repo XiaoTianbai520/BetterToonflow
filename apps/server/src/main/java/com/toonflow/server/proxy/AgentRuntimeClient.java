@@ -11,7 +11,12 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,8 +33,8 @@ public class AgentRuntimeClient {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
     /** 普通 JSON 转发读取超时 30s。 */
     private static final Duration JSON_TIMEOUT = Duration.ofSeconds(30);
-    /** 长耗时与流式转发读取超时 31 分钟，略大于调试沙箱 30 分钟硬超时。 */
-    private static final Duration STREAM_TIMEOUT = Duration.ofMillis(1_860_000);
+    /** 流式转发仅限制等待响应头 30s，建连后的流式读取由 StreamRelay 按空闲超时管理，不设总时长上限。 */
+    private static final long STREAM_HEADER_TIMEOUT_SECONDS = 30L;
 
     private final HttpClient http;
     private final String baseUrl;
@@ -57,10 +62,36 @@ public class AgentRuntimeClient {
         }
     }
 
-    /** 流式响应：只在响应头到达后返回，响应体由调用方逐帧读取并立即 flush。 */
+    /**
+     * 流式响应：HttpRequest 不设总时长超时，仅通过 sendAsync + orTimeout 限制 30s 响应头等待；
+     * 响应头到达后即返回，响应体由 StreamRelay 逐帧读取、立即 flush 并按读取空闲超时管理。
+     */
     public HttpResponse<InputStream> openStream(HttpMethod method, String pathAndQuery, byte[] body) {
-        return send(request(method, pathAndQuery, body, STREAM_TIMEOUT),
-                HttpResponse.BodyHandlers.ofInputStream());
+        HttpRequest request = request(method, pathAndQuery, body, null);
+        CompletableFuture<HttpResponse<InputStream>> upstream =
+                http.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
+        CompletableFuture<HttpResponse<InputStream>> timed =
+                upstream.copy().orTimeout(STREAM_HEADER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        try {
+            return timed.get();
+        } catch (ExecutionException exception) {
+            Throwable cause = unwrapCause(exception);
+            if (cause instanceof TimeoutException || cause instanceof HttpTimeoutException) {
+                cancelAndRelease(upstream);
+                throw new BusinessException(502, "内部运行时响应超时", null);
+            }
+            if (isConnectFailure(cause)) {
+                throw new BusinessException(502, "内部运行时不可用", null);
+            }
+            if (cause instanceof BusinessException businessException) {
+                throw businessException;
+            }
+            throw new BusinessException(502, "内部运行时通信失败", null);
+        } catch (InterruptedException exception) {
+            cancelAndRelease(upstream);
+            Thread.currentThread().interrupt();
+            throw new BusinessException(500, "请求已被中断", null);
+        }
     }
 
     /** 普通 JSON 响应：体积小且需要按状态码决定是否透传，允许一次性读取。 */
@@ -74,10 +105,12 @@ public class AgentRuntimeClient {
             throw new BusinessException(500, "服务间内部鉴权未配置，请设置 TOONFLOW_INTERNAL_TOKEN", null);
         }
         HttpRequest.Builder builder = HttpRequest.newBuilder(target(pathAndQuery))
-                .timeout(timeout)
                 .header("X-Toonflow-Internal-Token", internalToken)
                 .header("X-Request-Id", UUID.randomUUID().toString())
                 .header("Accept", "application/json, application/x-ndjson, text/event-stream");
+        if (timeout != null) {
+            builder.timeout(timeout);
+        }
         if (body == null || body.length == 0) {
             builder.method(method.name(), HttpRequest.BodyPublishers.noBody());
         } else {
@@ -109,5 +142,36 @@ public class AgentRuntimeClient {
             Thread.currentThread().interrupt();
             throw new BusinessException(500, "请求已被中断", null);
         }
+    }
+
+    private void cancelAndRelease(CompletableFuture<HttpResponse<InputStream>> upstream) {
+        if (!upstream.cancel(true) && upstream.isDone() && !upstream.isCompletedExceptionally()) {
+            try {
+                InputStream body = upstream.join().body();
+                if (body != null) {
+                    body.close();
+                }
+            } catch (IOException | RuntimeException ignored) {
+                // 超时或中断竞态下释放已到达的响应体，不掩盖主异常。
+            }
+        }
+    }
+
+    private static Throwable unwrapCause(Throwable throwable) {
+        Throwable current = throwable;
+        while ((current instanceof ExecutionException || current instanceof CompletionException)
+                && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private static boolean isConnectFailure(Throwable throwable) {
+        for (Throwable current = throwable; current != null; current = current.getCause()) {
+            if (current instanceof ConnectException) {
+                return true;
+            }
+        }
+        return false;
     }
 }

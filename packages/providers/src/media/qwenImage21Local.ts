@@ -35,6 +35,17 @@ async function jsonRequest(context: { tool: ProviderTools }, base: string, path:
   return await response.json();
 }
 
+function isPromptInQueue(queue: unknown, promptId: string): boolean | null {
+  if (!queue || typeof queue !== "object") return null;
+  const record = queue as { queue_running?: unknown; queue_pending?: unknown };
+  if (!Array.isArray(record.queue_running) && !Array.isArray(record.queue_pending)) return null;
+  const entries = [
+    ...(Array.isArray(record.queue_running) ? record.queue_running : []),
+    ...(Array.isArray(record.queue_pending) ? record.queue_pending : []),
+  ];
+  return entries.some(entry => Array.isArray(entry) && entry[1] === promptId);
+}
+
 async function uploadImage(context: { tool: ProviderTools }, base: string, input: MediaInput, signal: AbortSignal) {
   let bytes: Uint8Array;
   if (input.type === "url") {
@@ -75,6 +86,7 @@ export default {
     { id: "qwenImage21Text", label: "Qwen 2.1 文生图 · TEXT_TO_IMAGE", type: "image", mode: ["text"], imageSizes: ["1K", "0.5MP", "2K"], imageRatios: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"] },
     { id: "qwenImage21Edit", label: "Qwen 2.1 图生图 · IMAGE_TO_IMAGE", type: "image", mode: ["singleImage"], imageSizes: ["1K", "0.5MP", "2K"], imageRatios: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"] },
   ],
+  async getPrice() { return { price: "本地算力", tips: "消耗本机显存、内存与电力，无远程生成接口费用" }; },
   async generateImage(request: ImageRequest) {
     const base = comfyBase(this.config);
     const edit = request.model === "qwenImage21Edit";
@@ -129,27 +141,46 @@ export default {
     signal.addEventListener("abort", cancel, { once: true });
     if (signal.aborted) cancel();
     try {
+      let missingCount = 0;
       while (true) {
         signal.throwIfAborted();
         const history = await jsonRequest(this, base, `/history/${promptId}`, signal);
         const record = history[promptId];
-        if (record?.status?.status_str === "error") {
-          const failure = record.status.messages?.find((entry: any) => entry[0] === "execution_error")?.[1];
-          const detail = this.tool.errorMessage(failure?.exception_message ?? record.status.messages);
-          throw new Error(`Qwen 图片生成失败（${promptId}）：${detail}`);
+        if (record) {
+          missingCount = 0;
+          if (record.status?.status_str === "error") {
+            const failure = record.status.messages?.find((entry: any) => entry[0] === "execution_error")?.[1];
+            const detail = this.tool.errorMessage(failure?.exception_message ?? record.status.messages);
+            throw new Error(`Qwen 图片生成失败（${promptId}）：${detail}`);
+          }
+          if (record.status?.completed) {
+            completed = true;
+            const image = record.outputs?.["9"]?.images?.[0];
+            if (!image?.filename || image.type !== "output") throw new Error("ComfyUI 已结束，但未返回 PNG 图片");
+            const query = new URLSearchParams({ filename: image.filename, subfolder: image.subfolder ?? "", type: "output" });
+            const response = await this.tool.fetch(`${base}/view?${query}`, { signal: AbortSignal.any([signal, AbortSignal.timeout(120000)]) });
+            if (!response.ok) throw new Error(`读取生成图片失败：HTTP ${response.status}`);
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            if (bytes.length < 24 || bytes.length > 100 * 1024 * 1024 || !Buffer.from(bytes.subarray(0, 8)).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) throw new Error("返回的图片不是有效 PNG 或超过100MB");
+            return [{ mediaType: "image" as const, type: "binary" as const, data: bytes, mimeType: "image/png" }];
+          }
+        } else {
+          let inQueue: boolean | null = null;
+          try {
+            const queue = await jsonRequest(this, base, "/queue", signal);
+            inQueue = isPromptInQueue(queue, promptId);
+          } catch {
+            signal.throwIfAborted();
+          }
+          if (inQueue === true) {
+            missingCount = 0;
+          } else if (inQueue === false) {
+            missingCount += 1;
+            if (missingCount >= 10) throw new Error(`ComfyUI 任务已丢失或队列被清空（${promptId}）`);
+          }
         }
-        if (record?.status?.completed) {
-          completed = true;
-          const image = record.outputs?.["9"]?.images?.[0];
-          if (!image?.filename || image.type !== "output") throw new Error("ComfyUI 已结束，但未返回 PNG 图片");
-          const query = new URLSearchParams({ filename: image.filename, subfolder: image.subfolder ?? "", type: "output" });
-          const response = await this.tool.fetch(`${base}/view?${query}`, { signal: AbortSignal.any([signal, AbortSignal.timeout(120000)]) });
-          if (!response.ok) throw new Error(`读取生成图片失败：HTTP ${response.status}`);
-          const bytes = new Uint8Array(await response.arrayBuffer());
-          if (bytes.length < 24 || bytes.length > 100 * 1024 * 1024 || !Buffer.from(bytes.subarray(0, 8)).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) throw new Error("返回的图片不是有效 PNG 或超过100MB");
-          return [{ mediaType: "image" as const, type: "binary" as const, data: bytes, mimeType: "image/png" }];
-        }
-        await pause(2000, signal);
+        // 首次查无记录就计数，之后九次检查至少跨越 20 秒，避免过早判丢。
+        await pause(missingCount > 0 ? 2500 : 2000, signal);
       }
     } finally {
       signal.removeEventListener("abort", cancel);

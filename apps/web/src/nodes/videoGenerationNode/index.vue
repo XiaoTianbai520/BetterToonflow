@@ -44,9 +44,7 @@
           v-model="refList"
           @preview="setReferencePreview"
           @remove="removeReference" />
-        <div v-if="frameMode" class="referenceHint">
-          {{ selectedMode === "startFrameOptional" ? "仅一张图片时作为尾帧；两张图片按顺序作为首帧、尾帧" : "图片引用按顺序作为首帧、尾帧" }}
-        </div>
+        <div v-if="frameMode" class="referenceHint">{{ referenceHint }}</div>
         <promptInput v-model="data.promptModel" v-model:text="data.prompt" :references="referenceMentions" expandable />
         <div class="promptFooter">
           <el-select
@@ -147,9 +145,23 @@ const { generating } = generationState;
 let generation: Promise<void> | undefined;
 let modelsRequest: Promise<void> | undefined;
 // ACT: 供应商未声明视频比例范围，沿用界面的通用比例，具体支持范围由供应商校验。
+const frameModes = ["singleImage", "startEndRequired", "endFrameOptional", "startFrameOptional"];
+const modeSemantics = {
+  text: "纯文生视频，不接收图片/视频/音频输入",
+  singleImage: "单图首帧锚点（0.00s 首帧），必须接入单帧分镜画面或上段尾帧，严禁接入多视角角色三视图/设定板",
+  startEndRequired: "首尾帧锚点（两张图片按顺序作为首帧、尾帧），仅接入单帧画面，严禁接入多视角角色设定板",
+  endFrameOptional: "首帧必填、尾帧可选（帧锚点模式），仅接入单帧画面，严禁接入多视角角色设定板",
+  startFrameOptional: "尾帧必填、首帧可选（仅一张图时作为尾帧，两张图按顺序作为首帧、尾帧），仅接入单帧画面，严禁接入多视角角色设定板",
+  referenceArray: "数组模式（如 [\"imageReference:9\", ...]）为主体/场景/音视频参考生视频，可安全接入多视角角色设定图、场景设定图与参考素材",
+};
 const selectedModel = computed(() => models.value.find((item) => JSON.stringify([item.providerId, item.modelId]) === data.value.model));
 const selectedMode = computed(() => selectedModel.value?.mode?.find((item) => JSON.stringify(item) === data.value.mode) as NodeVideoRequest["mode"]);
-const frameMode = computed(() => ["startEndRequired", "endFrameOptional", "startFrameOptional"].includes(String(selectedMode.value)));
+const frameMode = computed(() => frameModes.includes(String(selectedMode.value)));
+const referenceHint = computed(() => {
+  if (selectedMode.value === "singleImage") return "图片将作为视频首帧（0.00s），请接入单帧分镜画面或上段尾帧，勿接入多视角角色设定板";
+  if (selectedMode.value === "startFrameOptional") return "仅一张图片时作为尾帧；两张图片按顺序作为首帧、尾帧";
+  return "图片引用按顺序作为首帧、尾帧（请勿接入多视角角色设定板）";
+});
 const mediaCounts = computed(() => ({
   image: refList.value.filter((item) => item.dataType === "IMAGE").length,
   video: refList.value.filter((item) => item.dataType === "VIDEO").length,
@@ -224,7 +236,7 @@ const generationInput = computed<Omit<NodeVideoRequest, "directory"> | undefined
     outputDirectory: `assets/${id}`,
     images: frameMode.value ? undefined : images,
     firstFrame: frameMode.value && (selectedMode.value !== "startFrameOptional" || images.length > 1) ? images[0] : undefined,
-    lastFrame: frameMode.value ? images[selectedMode.value === "startFrameOptional" && images.length === 1 ? 0 : 1] : undefined,
+    lastFrame: frameMode.value && selectedMode.value !== "singleImage" ? images[selectedMode.value === "startFrameOptional" && images.length === 1 ? 0 : 1] : undefined,
     videos: refList.value.flatMap(item => item.dataType === "VIDEO" && item.value ? [{ path: item.value.url, mimeType: item.value.mimeType }] : []),
     audios: refList.value.flatMap(item => item.dataType === "AUDIO" && item.value ? [{ path: item.value.url, mimeType: item.value.mimeType }] : []),
   };
@@ -368,6 +380,7 @@ function getConfig() {
     models: models.value,
     ratios: ratioOptions,
     matchingModes: matchingModes.value,
+    modeSemantics,
   };
 }
 

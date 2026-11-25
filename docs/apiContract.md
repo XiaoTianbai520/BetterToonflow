@@ -223,7 +223,7 @@ flowchart LR
    - `X-Request-Id`：UUID v4，用于跨 Java 与 Bun 串联请求日志。
 3. **超时与流式转发配置**：
    - 普通 JSON 请求转发（如 `/api/agent/create`、`/api/providers/media/validate`）：连接超时 `5,000ms`，读取超时 `30,000ms`。
-   - 长耗时与流式转发（`/api/agent`、`/api/ai/generate`、`/api/ai/media/generate`、`/api/providers/debug/run`）：连接超时 `5,000ms`，读取超时设为 **`1,860,000ms`（31 分钟，略大于调试沙箱的 30 分钟硬超时）**，禁用响应体缓冲。
+   - 长耗时与流式转发（`/api/agent`、`/api/ai/generate`、`/api/ai/media/generate`、`/api/ai/media/balanceEvents`、`/api/providers/debug/run`）：连接超时 `5,000ms`，响应头等待超时 `30,000ms`，流式读取空闲超时 **`120,000ms`（120 秒，由上游每 20 秒保活心跳刷新计时，不再设置 31 分钟硬性总时长上限；`/api/providers/debug/run` 的 30 分钟沙箱执行上限仍由 `agentRuntime` 自身强制执行）**，禁用响应体缓冲。
 4. **双后端权威数据源与 `data/` 原子快照同步机制（对应 `DEC-05`、`DEC-07`、`DEC-08`）**：
    - **唯一权威源与唯一写入口**：PostgreSQL 16（含 `sys_setting`、`sys_personalization`、`ai_language_provider`、`ai_media_provider`、`skill_meta`、`workspace_project` 共 6 张核心表）是系统配置、个性化文档、供应商及相关元数据的**唯一权威数据源**；Spring Boot 3 是这些数据的**唯一写入口**。其中 `sys_personalization` 是 `memory` 和 `agents` 文本及其 `revision` 的唯一权威数据源，不在 `sys_setting` 中重复存储。
    - **事务后原子文件同步**：当 Spring Boot 3 的数据库事务提交后，将 Bun `agentRuntime` 需要读取的派生文件快照——系统配置快照（`data/settings.json`）、媒体供应商源码（`data/providers/<fileName>`）、长期记忆与行为准则（`data/memories/memory.md`、`data/AGENTS.md`）同步写入共享 `data/` 目录，所有文件写入必须采用**临时文件 + 原子替换（Atomic Rename）**方式。

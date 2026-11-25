@@ -1,6 +1,6 @@
 import { readFile } from "@toonflow/file";
 import { parseSessionEntries } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext } from "@/tools/types";
+import type { CanvasAuthorizationScope, CanvasContext } from "@/tools/types";
 import type { AgentEvent } from "@/agent/runtime/types";
 import { run } from "@/agent/runtime";
 import { createAgentConversation, getToolResultText, trackAgentEvent, updateSubAgent } from "@/agent/runtime/sessions";
@@ -40,7 +40,7 @@ async function acquireTask(cwd: string, signal?: AbortSignal) {
 export async function runDelegatedAgent(options: {
   cwd: string; parentFile: string; name: string; task: string;
   providerId: string; modelId: string; thinkingLevel: "off" | "low" | "medium" | "high";
-  canvas?: CanvasContext; signal?: AbortSignal; send: (event: AgentEvent) => void; onProgress?: (text: string) => void;
+  canvas?: CanvasContext; authorizationScope?: CanvasAuthorizationScope; signal?: AbortSignal; send: (event: AgentEvent) => void; onProgress?: (text: string) => void;
 }) {
   const release = await acquireTask(options.cwd, options.signal);
   try {
@@ -50,7 +50,7 @@ export async function runDelegatedAgent(options: {
 }
 
 async function executeDelegatedAgent(options: Parameters<typeof runDelegatedAgent>[0]) {
-  const { cwd, parentFile, name, task, providerId, modelId, thinkingLevel, canvas, signal, onProgress } = options;
+  const { cwd, parentFile, name, task, providerId, modelId, thinkingLevel, canvas, authorizationScope, signal, onProgress } = options;
   const child = await createAgentConversation(cwd, { parentFile, name, task, providerId, modelId, thinkingLevel });
   const agent = { file: child.file, parentFile, name, task, providerId, modelId, thinkingLevel, status: "running" as const };
   await updateSubAgent(cwd, parentFile, agent);
@@ -65,7 +65,7 @@ async function executeDelegatedAgent(options: Parameters<typeof runDelegatedAgen
   const questions = createQuestionContext(cwd, send, () => controller.abort());
   const result: SubAgentResult = { name, status: "running", result: "准备执行" };
   try {
-    await run({ prompt: task, cwd, sessionFile: child.file, providerId, modelId, thinkingLevel, canvas: bridge?.context, question: questions.context, signal: childSignal, onCancel: () => controller.abort() }, send);
+    await run({ prompt: task, cwd, sessionFile: child.file, providerId, modelId, thinkingLevel, canvas: bridge?.context, question: questions.context, authorizationScope, signal: childSignal, onCancel: () => controller.abort() }, send);
     result.status = childSignal.aborted ? "cancelled" : "completed";
   } catch (error) {
     result.status = childSignal.aborted ? "cancelled" : (error as { code?: string })?.code === "AGENT_LENGTH" ? "limited" : "error";

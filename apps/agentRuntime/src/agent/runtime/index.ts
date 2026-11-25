@@ -5,11 +5,11 @@ import {
   createAgentSession,
   SessionManager,
 } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext, QuestionContext } from "@/tools/types";
+import type { CanvasAuthorizationScope, CanvasContext, QuestionContext } from "@/tools/types";
 import type { AgentEvent, AgentMention, AgentToolCall } from "@/agent/runtime/types";
 import { agentMentionsSchema, mentionPrompt, snapshotMentions, validateMentionTokens } from "@/agent/runtime/mentions";
 import { readAiReferences, referenceContent } from "@/ai";
-import { createAgentTools, createSubAgentTool, createReportTool } from "@/tools";
+import { createAgentTools, createCanvasAuthorizationScope, createSubAgentTool, createReportTool } from "@/tools";
 import { createAgentResources } from "@/agent/runtime/resources";
 import { createAgentModel } from "@/agent/runtime/model";
 import { configureAgentRequests } from "@/agent/runtime/requests";
@@ -36,6 +36,7 @@ type AgentOptions = {
   resendFrom?: string;
   canvas?: CanvasContext;
   question?: QuestionContext;
+  authorizationScope?: CanvasAuthorizationScope;
   signal?: AbortSignal;
   onCancel?: () => void;
 };
@@ -53,6 +54,7 @@ export async function run(
     resendFrom,
     canvas,
     question,
+    authorizationScope,
     signal,
     onCancel,
   }: AgentOptions,
@@ -112,6 +114,8 @@ export async function run(
   let unregister = () => {};
   let mentionFiles: string[] = [];
   let messageAccepted = false;
+  const ownsAuthorizationScope = !authorizationScope;
+  const authScope = authorizationScope ?? createCanvasAuthorizationScope();
   try {
     const history = newHistory ?? SessionManager.open(sessionPath!, sessionsDir, cwd);
     const file = basename(history.getSessionFile()!);
@@ -133,7 +137,7 @@ export async function run(
       abort: () => { controller.abort(); onCancel?.(); return finished.promise; },
     };
     unregister = registerAgentSession(history.getSessionFile()!, active);
-    const tools = await createAgentTools(cwd, canvas, question);
+    const tools = await createAgentTools(cwd, canvas, question, authScope);
     if (parentFile && child) {
       if (tools.some(tool => tool.name === "report")) throw new Error("工具名称 report 已被内置上报工具占用");
       tools.push(createReportTool(cwd, parentFile, file, child.name, send));
@@ -141,7 +145,7 @@ export async function run(
     if (!parentFile) tools.push(await createSubAgentTool({
       tools,
       runTask: (name, task, taskSignal, onProgress) => runDelegatedAgent({
-        cwd, parentFile: file, name, task, providerId, modelId, thinkingLevel, canvas, signal: taskSignal, send, onProgress,
+        cwd, parentFile: file, name, task, providerId, modelId, thinkingLevel, canvas, authorizationScope: authScope, signal: taskSignal, send, onProgress,
       }),
     }));
     const resources = await createAgentResources(cwd, tools, undefined, child
@@ -433,6 +437,7 @@ export async function run(
       }
     }
   } finally {
+    if (ownsAuthorizationScope) authScope.clear();
     unregister();
     release();
     finished.resolve();

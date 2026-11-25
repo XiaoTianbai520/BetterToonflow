@@ -8,7 +8,7 @@ import {
   defineTool, createReadToolDefinition, createWriteToolDefinition, createEditToolDefinition, createLsToolDefinition,
   detectSupportedImageMimeTypeFromFile, type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import type { CanvasContext, QuestionContext, ToolContext, ToolFiles } from "./types";
+import type { CanvasAuthorizationScope, CanvasContext, QuestionContext, ToolContext, ToolFiles } from "./types";
 import conf from "@/utils/conf";
 import { isWithin, resolveWorkspacePath, writeWorkspaceFile, renameWorkspaceFile, lockWorkspaceFiles, protectWorkspaceRoot } from "@/utils/workspace/files";
 import askUser from "./askUser";
@@ -23,7 +23,7 @@ import webFetch from "./webFetch";
 import { createMemoryTool } from "./memory";
 import { isMemoryEnabled } from "@/utils/personalization";
 import { authorizeMediaGeneration } from "./mediaGeneration/authorization";
-import { createAuthorizedCanvas } from "./canvas/authorization";
+import { createAuthorizedCanvas, createCanvasAuthorizationScope } from "./canvas/authorization";
 import { createSkillContext } from "@/agent/skills";
 import { createAssetContext } from "@/agent/assets";
 import { readDocument } from "@/utils/documents";
@@ -31,10 +31,18 @@ import { readDocument } from "@/utils/documents";
 export { createMemoryTool } from "./memory";
 export { createSubAgentTool } from "./subAgent";
 export { createReportTool } from "./report";
+export { createCanvasAuthorizationScope } from "./canvas/authorization";
 
 const toolPackages = { askUser, canvas: canvasTools, mediaGeneration, workspace, assetOperator, skillOperator, ffmpeg, webSearch, webFetch };
 
-export function createAgentToolContext(cwd: string, config: Record<string, unknown> = {}, canvas?: CanvasContext, question?: QuestionContext, workspaceAvailable = true): ToolContext {
+export function createAgentToolContext(
+  cwd: string,
+  config: Record<string, unknown> = {},
+  canvas?: CanvasContext,
+  question?: QuestionContext,
+  workspaceAvailable = true,
+  canvasAuthorization?: CanvasAuthorizationScope,
+): ToolContext {
   const skillsDirectory = join(dirname(conf.path), "skills");
   const requireWorkspace = () => { if (!workspaceAvailable) throw new Error("此对话未提供工作目录，无法使用文件或媒体操作"); };
   const resolvePath = async (path: string, readOnly = false) => {
@@ -87,8 +95,9 @@ export function createAgentToolContext(cwd: string, config: Record<string, unkno
       await copyFile(source, destination, exclusive ? constants.COPYFILE_EXCL : 0);
     }),
   };
+  const authScope = canvas ? (canvasAuthorization ?? createCanvasAuthorizationScope()) : undefined;
   return {
-    cwd, config, files, resolvePath, writeFile: files.writeFile, canvas: canvas ? createAuthorizedCanvas(cwd, canvas, question) : undefined, question,
+    cwd, config, files, resolvePath, writeFile: files.writeFile, canvas: canvas ? createAuthorizedCanvas(cwd, canvas, question, authScope) : undefined, canvasAuthorization: authScope, question,
     skills: workspaceAvailable ? createSkillContext(cwd) : undefined, assets: workspaceAvailable ? createAssetContext(cwd) : undefined,
     ffmpeg: signal => { requireWorkspace(); return createWorkspaceFfmpeg(cwd, signal); },
     media: workspaceAvailable ? {
@@ -125,10 +134,15 @@ export function createAgentToolContext(cwd: string, config: Record<string, unkno
   };
 }
 
-export async function createAgentTools(cwd: string, canvas?: CanvasContext, question?: QuestionContext): Promise<ToolDefinition[]> {
+export async function createAgentTools(
+  cwd: string,
+  canvas?: CanvasContext,
+  question?: QuestionContext,
+  canvasAuthorization?: CanvasAuthorizationScope,
+): Promise<ToolDefinition[]> {
   const tools: ToolDefinition[] = isMemoryEnabled() ? [createMemoryTool()] : [];
   const names = new Set(tools.map(tool => tool.name));
-  const context = createAgentToolContext(cwd, {}, canvas, question);
+  const context = createAgentToolContext(cwd, {}, canvas, question, true, canvasAuthorization);
   const configurations = conf.get("toolConfigs", {});
   for (const [name, toolPackage] of Object.entries(toolPackages)) {
     const config = toolPackage.validateConfig(Object.hasOwn(configurations, name) ? configurations[name] : {});
