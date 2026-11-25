@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Toonflow · 文档模式重设计（Krea 方向）</title>
+<link rel="stylesheet" href="redesign.css" />
+<script>if (location.hash.includes('light')) document.documentElement.classList.add('light');</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 2c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8Z"/><circle cx="19" cy="4" r="1.4" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-canvas" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><path d="M10 6.5h5.5a2 2 0 0 1 2 2V14"/></symbol>
+  <symbol id="i-assets" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-skill" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z"/><path d="M4 19a2 2 0 0 1 2-2h13M9 7h6"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H15a3 3 0 0 1 3 3v6.5M6 8.5V15a3 3 0 0 0 3 3h6.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L10 21h4l.6-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4M12 8v4l3 2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7ZM10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+  <symbol id="i-chevronDown" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chevronLeft" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+  <symbol id="i-chevronRight" viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-dock" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></symbol>
+  <symbol id="i-at" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-4 7.5"/></symbol>
+  <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m20 11-8.5 8.5a5 5 0 0 1-7-7L13 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L14 7"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 10h18M9 10v10M15 10v10"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-heading" viewBox="0 0 24 24"><path d="M6 4v16M18 4v16M6 12h12"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M8 5 3 10l5 5"/><path d="M3 10h11a6 6 0 0 1 0 12h-2"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m16 5 5 5-5 5"/><path d="M21 10H10a6 6 0 0 0 0 12h2"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></symbol>
+  <symbol id="i-split" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M12 4v16"/></symbol>
+</svg>
+
+<div class="app">
+  <nav class="rail">
+    <div class="railLogo"><svg class="icon lg"><use href="#i-logo"/></svg></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-canvas"/></svg></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-assets"/></svg></div>
+    <div class="railItem active"><svg class="icon lg"><use href="#i-doc"/></svg></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-flow"/></svg></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-skill"/></svg></div>
+    <div class="railDivider"></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-search"/></svg></div>
+    <div class="railBottom">
+      <div class="railItem"><svg class="icon lg"><use href="#i-settings"/></svg></div>
+      <div class="avatar" style="margin-top:10px">苏</div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumbs">
+        <span class="proj">localMediaTest</span>
+        <span class="sep">/</span>
+        <span class="file">剧本 / 第1集 · 分镜脚本.md</span>
+      </div>
+      <div class="segmented">
+        <span class="segItem"><svg class="icon sm"><use href="#i-canvas"/></svg>画布</span>
+        <span class="segItem active"><svg class="icon sm"><use href="#i-doc"/></svg>文档</span>
+      </div>
+      <div class="topRight">
+        <span class="saved"><svg class="icon sm"><use href="#i-check"/></svg>已自动保存</span>
+        <span class="credit">⚡ <b>¥126.40</b> 本月算力</span>
+        <span class="ghostBtn"><svg class="icon"><use href="#i-history"/></svg></span>
+        <span class="ghostBtn"><svg class="icon"><use href="#i-bell"/></svg></span>
+      </div>
+    </header>
+
+    <div class="bodyRow">
+      <aside class="library">
+        <div class="libTitle">
+          <h4>工作区文件</h4>
+          <span class="ghostBtn"><svg class="icon sm"><use href="#i-plus"/></svg></span>
+          <span class="ghostBtn"><svg class="icon sm"><use href="#i-search"/></svg></span>
+        </div>
+        <div class="libSearch" style="margin-top:0"><svg class="icon sm"><use href="#i-search"/></svg>快速打开文件<kbd>Ctrl P</kbd></div>
+        <div class="tree">
+          <div class="treeItem"><svg class="icon sm"><use href="#i-chevronDown"/></svg><svg class="icon sm"><use href="#i-canvas"/></svg>画布1.json<span class="meta">4 节点</span></div>
+          <div class="treeItem lv2"><span class="dot" style="background:var(--cText)"></span>分镜脚本 · 第 1 集</div>
+          <div class="treeItem lv2"><span class="dot" style="background:var(--cImage)"></span>角色设定 · 林晚</div>
+          <div class="treeItem lv2"><span class="dot" style="background:var(--cVideo)"></span>雨夜街头 · 镜头03<span class="dot" style="background:var(--accent);margin-left:auto"></span></div>
+          <div class="treeItem lv2"><span class="dot" style="background:var(--cAudio)"></span>旁白 · 林晚</div>
+          <div class="treeItem"><svg class="icon sm"><use href="#i-chevronRight"/></svg><svg class="icon sm"><use href="#i-folder"/></svg>assets<span class="meta">26</span></div>
+          <div class="treeItem"><svg class="icon sm"><use href="#i-chevronDown"/></svg><svg class="icon sm"><use href="#i-folder"/></svg>剧本</div>
+          <div class="treeItem lv1 active"><svg class="icon sm"><use href="#i-doc"/></svg>第1集 · 分镜脚本.md</div>
+          <div class="treeItem lv1"><svg class="icon sm"><use href="#i-doc"/></svg>角色小传.md</div>
+          <div class="treeItem lv1"><svg class="icon sm"><use href="#i-doc"/></svg>分集大纲.md</div>
+          <div class="treeItem"><svg class="icon sm"><use href="#i-doc"/></svg>README.txt</div>
+          <div class="treeItem dim"><svg class="icon sm"><use href="#i-chevronRight"/></svg><svg class="icon sm"><use href="#i-folder"/></svg>.agent</div>
+        </div>
+        <div class="libFoot"><svg class="icon sm"><use href="#i-chevronLeft"/></svg>收起面板</div>
+      </aside>
+
+      <div class="docMain">
+        <section class="docPane">
+          <div class="docTabs">
+            <span class="docTab active"><svg class="icon sm"><use href="#i-doc"/></svg>第1集 · 分镜脚本.md<span class="dirty"></span></span>
+            <span class="docTab"><svg class="icon sm"><use href="#i-doc"/></svg>角色小传.md</span>
+            <span class="docTabAdd"><svg class="icon sm"><use href="#i-plus"/></svg></span>
+          </div>
+          <div class="mdToolbar">
+            <span class="tb"><b>B</b></span>
+            <span class="tb"><i>I</i></span>
+            <span class="tb"><svg class="icon sm"><use href="#i-heading"/></svg></span>
+            <span class="tb"><svg class="icon sm"><use href="#i-list"/></svg></span>
+            <span class="tb"><svg class="icon sm"><use href="#i-table"/></svg></span>
+            <span class="sep"></span>
+            <span class="tb"><svg class="icon sm"><use href="#i-search"/></svg></span>
+            <span class="tb"><svg class="icon sm"><use href="#i-undo"/></svg></span>
+            <span class="tb"><svg class="icon sm"><use href="#i-redo"/></svg></span>
+            <div class="right"><span>预览</span><span><svg class="icon sm"><use href="#i-split"/></svg></span></div>
+          </div>
+          <div class="docBody">
+            <h1>第 1 集 · 雨夜恋人</h1>
+            <div class="docMeta">
+              <span class="chip">都市情感</span><span class="chip">90s</span><span class="chip">6 个分镜</span><span class="chip price">已消耗 ¥18.62</span>
+            </div>
+            <h2>镜头 03 · 雨夜街头</h2>
+            <p>林晚撑伞走过霓虹灯下的长街，风衣被雨水打湿。镜头从背后缓慢推近，环境音是密集的雨声与远处的车流。她在第二个路口停下，回头看了一眼旧书店的灯牌。</p>
+            <table class="docTable">
+              <tr><th>镜头</th><th>画面</th><th>时长</th><th>配音</th><th>状态</th></tr>
+              <tr><td>01</td><td>旧书店 · 暖光内景</td><td>5s</td><td>旁白 A</td><td><span class="tag">已完成</span></td></tr>
+              <tr><td>02</td><td>街角 · 回眸特写</td><td>4s</td><td>旁白 B</td><td><span class="tag">已完成</span></td></tr>
+              <tr><td>03</td><td>雨夜街头 · 中近景</td><td>8s</td><td>旁白 C</td><td><span class="tag running">生成中 68%</span></td></tr>
+            </table>
+            <div class="docQuote">角色参考已锁定：林晚（长风衣造型）。修改分镜时，画布中对应的 videoGenerationNode 会同步更新，引用同一组参考图。</div>
+          </div>
+          <div class="docStatus">
+            <span>Markdown</span><span>UTF-8</span>
+            <div class="right"><span>revision a3f9</span><span>自动保存 · 2 秒前</span></div>
+          </div>
+        </section>
+
+        <section class="docPane imagePane">
+          <div class="docTabs">
+            <span class="docTab active"><svg class="icon sm"><use href="#i-image"/></svg>角色设定 · 林晚.png</span>
+          </div>
+          <div class="docBody" style="padding:16px">
+            <div class="imageInfo" style="padding:0">
+              <div class="nodePreview">
+                <svg viewBox="0 0 560 315" preserveAspectRatio="xMidYMid slice">
+                  <defs><linearGradient id="skyA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b1d43"/><stop offset=".55" stop-color="#8a4356"/><stop offset="1" stop-color="#e0995a"/></linearGradient></defs>
+                  <rect width="560" height="315" fill="url(#skyA)"/>
+                  <circle cx="392" cy="168" r="46" fill="#f7cf8b" opacity=".95"/>
+                  <path d="M0 205 90 160 170 205 250 172 340 210 430 178 560 214V315H0Z" fill="#3a2338" opacity=".8"/>
+                  <g fill="#221528"><rect x="30" y="150" width="46" height="120"/><rect x="86" y="180" width="30" height="90"/><rect x="452" y="140" width="52" height="130"/><rect x="512" y="176" width="34" height="94"/></g>
+                  <rect y="255" width="560" height="60" fill="#170f22"/>
+                  <g fill="#100b18"><circle cx="252" cy="140" r="16"/><path d="M236 158h32l14 92h-60Z"/><rect x="238" y="250" width="10" height="42"/><rect x="256" y="250" width="10" height="42"/></g>
+                  <ellipse cx="252" cy="297" rx="58" ry="5" fill="#000" opacity=".35"/>
+                </svg>
+              </div>
+              <div class="kvList">
+                <div class="kv"><span>尺寸</span><b>1024 × 1024</b></div>
+                <div class="kv"><span>模型</span><b>Flux Pro · 16:9 裁切</b></div>
+                <div class="kv"><span>来源</span><b>画布1 / 角色设定 · 林晚</b></div>
+                <div class="kv"><span>引用</span><b>被 3 个节点引用</b></div>
+              </div>
+              <div class="paneActions">
+                <span class="miniBtn solid"><svg class="icon sm"><use href="#i-target"/></svg>在画布中定位</span>
+                <span class="miniBtn"><svg class="icon sm"><use href="#i-assets"/></svg>素材详情</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="agent">
+        <div class="agentHead">
+          <span class="agentBadge"><svg class="icon"><use href="#i-logo"/></svg></span>
+          <div>
+            <div class="t">Toonflow Agent</div>
+            <div class="s">当前文档 · 第1集 · 分镜脚本.md</div>
+          </div>
+          <div class="ops">
+            <span class="ghostBtn"><svg class="icon sm"><use href="#i-history"/></svg></span>
+            <span class="ghostBtn"><svg class="icon sm"><use href="#i-dock"/></svg></span>
+            <span class="ghostBtn"><svg class="icon sm"><use href="#i-close"/></svg></span>
+          </div>
+        </div>
+        <div class="agentBody">
+          <div class="msgUser">把镜头 03 的时长改成 8 秒，并同步到分镜表</div>
+          <div class="msgAgent">
+            <div class="who"><svg class="icon sm"><use href="#i-logo"/></svg>Toonflow Agent</div>
+            已把分镜表中镜头 03 的时长改为 8s，并同步更新了画布节点的生成参数。当前视频按 6s 生成，建议重新生成以匹配新时长。
+          </div>
+          <div class="toolCard">
+            <div class="toolRow">
+              <svg class="icon sm" style="color:var(--ok)"><use href="#i-check"/></svg>
+              <span class="label">编辑 第1集 · 分镜脚本.md<small>镜头 03 · 时长 6s → 8s</small></span>
+            </div>
+            <div class="toolRow">
+              <svg class="icon sm" style="color:var(--ok)"><use href="#i-check"/></svg>
+              <span class="label">同步画布节点参数<small>videoGenerationNode · 镜头03</small></span>
+            </div>
+            <div class="toolRow">
+              <svg class="icon sm" style="color:var(--warn)"><use href="#i-history"/></svg>
+              <span class="label">建议重跑视频<small>8s · 预计 ¥4.80 · 需确认后执行</small></span>
+            </div>
+          </div>
+          <div class="suggests">
+            <span class="suggest">确认并重跑</span>
+            <span class="suggest">生成镜头 04</span>
+            <span class="suggest">回到画布</span>
+          </div>
+        </div>
+        <div class="composer">
+          <div class="placeholder">输入消息，@ 提及文档、节点输出或素材…</div>
+          <div class="composerBar">
+            <span class="modelChip">deepseek-flash <svg class="icon sm"><use href="#i-chevronDown"/></svg></span>
+            <span class="ghostBtn"><svg class="icon"><use href="#i-at"/></svg></span>
+            <span class="ghostBtn"><svg class="icon"><use href="#i-paperclip"/></svg></span>
+            <span class="sendBtn"><svg class="icon"><use href="#i-send"/></svg></span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelectorAll('svg use').forEach(u => {
+  const sym = document.querySelector(u.getAttribute('href'));
+  if (!sym) return;
+  const host = u.ownerSVGElement;
+  host.setAttribute('viewBox', sym.getAttribute('viewBox') || '0 0 24 24');
+  host.setAttribute('fill', 'none');
+  host.setAttribute('stroke', 'currentColor');
+  host.setAttribute('stroke-width', '1.6');
+  host.setAttribute('stroke-linecap', 'round');
+  host.setAttribute('stroke-linejoin', 'round');
+  host.innerHTML = sym.innerHTML;
+});
+</script>
+</body>
+</html>

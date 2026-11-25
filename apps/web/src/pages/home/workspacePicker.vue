@@ -145,9 +145,18 @@ function confirmDirectory() {
 
 <style lang="scss" scoped>
 .workspaceButton {
-  max-width: min(340px, 100%);
+  max-width: min(240px, 100%);
+  height: 36px;
+  margin: 0;
+  padding: 0 11px;
+  border: 1px solid var(--tf-line);
+  border-radius: 9px;
+  background: var(--tf-panel-2);
+  color: var(--tf-text-2);
+  font-size: 12.5px;
 
-  :deep(> span) { min-width: 0; gap: 6px; }
+  &:hover { border-color: var(--tf-line-strong); background: var(--tf-panel-3); color: var(--tf-text); }
+  :deep(> span) { min-width: 0; gap: 7px; }
   .directoryName { overflow: hidden; text-overflow: ellipsis; }
   svg { flex-shrink: 0; }
 }

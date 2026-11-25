@@ -629,7 +629,7 @@ onBeforeUnmount(() => {
   sessionWatchers.forEach(stop => stop());
   disposables.forEach(disposable => disposable.dispose());
 });
-defineExpose({ flushSave, cancelSave, getDocument, openDocument, writeDocument, performFileAction });
+defineExpose({ flushSave, cancelSave, getDocument, openDocument, writeDocument, performFileAction, openQuickOpen: () => quickOpenRef.value?.open() });
 </script>
 
 <style lang="scss">
@@ -637,11 +637,10 @@ defineExpose({ flushSave, cancelSave, getDocument, openDocument, writeDocument, 
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  padding-top: 60px;
-  padding-right: var(--agentWidth, 0px);
+  padding: 0;
   overflow: hidden;
-  background: var(--el-bg-color);
-  .documentLayout { width: 100%; height: 100%; border-top: 1px solid var(--el-border-color); }
+  background: var(--tf-bg);
+  .documentLayout { width: 100%; height: 100%; }
   .dockviewToonflow {
     --dv-background-color: var(--el-bg-color);
     --dv-group-view-background-color: var(--el-bg-color);

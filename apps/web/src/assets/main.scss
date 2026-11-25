@@ -1,9 +1,78 @@
 html:root {
+  /* Toonflow design tokens — see /design.md. */
   --ui-radius: 8px;
   --ui-radius-small: calc(var(--ui-radius) * 0.5);
   --ui-radius-large: calc(var(--ui-radius) * 1.5);
+  --tf-bg: #f3f4f7;
+  --tf-chrome: #fafbfc;
+  --tf-panel: #ffffff;
+  --tf-panel-2: #f7f8fa;
+  --tf-panel-3: #eef0f4;
+  --tf-inset: #f2f3f6;
+  --tf-canvas-bg: #eef0f4;
+  --tf-text: #1d222b;
+  --tf-text-2: #59616f;
+  --tf-text-3: #8b93a1;
+  --tf-message-text: #333a47;
+  --tf-line: #e2e4ea;
+  --tf-line-soft: #eceef2;
+  --tf-line-strong: #d7dbe3;
+  --tf-accent: #3d7be0;
+  --tf-accent-soft: rgba(61, 123, 224, 0.1);
+  --tf-cta: #1d222b;
+  --tf-cta-text: #ffffff;
+  --tf-type-text: #c07f1d;
+  --tf-type-image: #d4528a;
+  --tf-type-video: #2f9e6e;
+  --tf-type-audio: #7e6ae0;
+  --tf-success: #2f9e6e;
+  --tf-warning: #c07f1d;
+  --tf-danger: #d45252;
+  --tf-dot-color: rgba(20, 30, 50, 0.13);
+  --tf-bubble: #eef1f6;
+  --tf-bubble-border: #e2e6ee;
+  --tf-pill-bg: rgba(255, 255, 255, 0.94);
+  --tf-seg-active: #ffffff;
+  --tf-mini-node: #d9dee7;
+  --tf-glow: rgba(61, 123, 224, 0.1);
+  --tf-scrim: rgba(238, 240, 245, 0.6);
+  --tf-shadow-node: 0 6px 20px rgba(30, 40, 60, 0.08);
+  --tf-shadow-float: 0 12px 32px rgba(30, 40, 60, 0.14);
+  --tf-shadow-modal: 0 40px 120px rgba(30, 40, 60, 0.18);
+  --tf-space-1: 4px;
+  --tf-space-2: 6px;
+  --tf-space-3: 8px;
+  --tf-space-4: 10px;
+  --tf-space-5: 12px;
+  --tf-space-6: 14px;
+  --tf-space-7: 16px;
+  --tf-space-8: 20px;
+  --tf-space-9: 24px;
+  --tf-space-10: 32px;
+  --tf-space-11: 44px;
+  --tf-space-12: 64px;
+
   --el-border-radius-base: var(--ui-radius);
   --el-border-radius-small: var(--ui-radius-small);
+  --el-bg-color: var(--tf-panel);
+  --el-bg-color-page: var(--tf-bg);
+  --el-bg-color-overlay: var(--tf-panel);
+  --el-text-color-primary: var(--tf-text);
+  --el-text-color-regular: var(--tf-message-text);
+  --el-text-color-secondary: var(--tf-text-2);
+  --el-text-color-placeholder: var(--tf-text-3);
+  --el-border-color: var(--tf-line);
+  --el-border-color-light: var(--tf-line);
+  --el-border-color-lighter: var(--tf-line-soft);
+  --el-border-color-extra-light: var(--tf-line-soft);
+  --el-fill-color: var(--tf-panel-3);
+  --el-fill-color-light: var(--tf-panel-2);
+  --el-fill-color-lighter: var(--tf-panel-2);
+  --el-fill-color-extra-light: var(--tf-inset);
+  --el-fill-color-dark: var(--tf-panel-3);
+  --el-box-shadow: var(--tf-shadow-float);
+  --el-box-shadow-light: var(--tf-shadow-node);
+  --el-box-shadow-lighter: var(--tf-shadow-node);
   --td-radius-small: var(--ui-radius-small);
   --td-radius-default: var(--ui-radius);
   --td-radius-medium: var(--ui-radius);
@@ -19,47 +88,91 @@ html:root {
   --td-text-color-brand: var(--el-color-primary);
   --td-text-color-link: var(--el-color-primary);
 
-  .el-card {
-    --el-card-border-radius: var(--ui-radius-large);
-  }
-
+  .el-card { --el-card-border-radius: var(--ui-radius-large); }
   .el-popper {
     --el-popper-border-radius: var(--ui-radius-large);
     --el-popover-border-radius: var(--ui-radius-large);
   }
-
-  .el-dropdown__popper {
-    > .el-scrollbar { border-radius: max(0px, calc(var(--el-popper-border-radius) - 1px)); }
-  }
-
-  .el-dialog { --el-dialog-border-radius: var(--ui-radius-large); }
+  .el-dropdown__popper > .el-scrollbar { border-radius: max(0px, calc(var(--el-popper-border-radius) - 1px)); }
+  .el-dialog { --el-dialog-border-radius: 18px; }
   .el-tag { --el-tag-border-radius: var(--ui-radius-small); }
+}
+
+html.dark {
+  --tf-bg: #0b0c0f;
+  --tf-chrome: #0e0f13;
+  --tf-panel: #14151a;
+  --tf-panel-2: #17181e;
+  --tf-panel-3: #1b1d24;
+  --tf-inset: #101117;
+  --tf-canvas-bg: #0c0d11;
+  --tf-text: #eceef1;
+  --tf-text-2: #9aa0a8;
+  --tf-text-3: #626873;
+  --tf-message-text: #d5d9df;
+  --tf-line: #23242b;
+  --tf-line-soft: #1c1d23;
+  --tf-line-strong: #2a2d38;
+  --tf-accent: #6e9eff;
+  --tf-accent-soft: rgba(110, 158, 255, 0.14);
+  --tf-cta: #f2f3f5;
+  --tf-cta-text: #101114;
+  --tf-type-text: #e8a33d;
+  --tf-type-image: #e56ba0;
+  --tf-type-video: #4cc38a;
+  --tf-type-audio: #9e8cff;
+  --tf-success: #4cc38a;
+  --tf-warning: #e8a33d;
+  --tf-danger: #e5636b;
+  --tf-dot-color: rgba(255, 255, 255, 0.09);
+  --tf-bubble: #23262f;
+  --tf-bubble-border: #2c303b;
+  --tf-pill-bg: rgba(23, 24, 30, 0.92);
+  --tf-seg-active: #262933;
+  --tf-mini-node: #2a2d38;
+  --tf-glow: rgba(110, 158, 255, 0.12);
+  --tf-scrim: rgba(4, 6, 10, 0.55);
+  --tf-shadow-node: 0 8px 28px rgba(0, 0, 0, 0.35);
+  --tf-shadow-float: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --tf-shadow-modal: 0 40px 120px rgba(0, 0, 0, 0.45);
 }
 
 html,
 body,
 #app {
   margin: 0;
+  min-width: 320px;
+  min-height: 100%;
 }
 
-* {
-  box-sizing: border-box;
+html {
+  background: var(--tf-bg);
+  color: var(--tf-text);
+  font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
 }
 
-.stream-markdown [data-stream-markdown="tooltip"] {
-  z-index: var(--markdown-tooltip-z-index);
-}
+body { background: var(--tf-bg); }
+* { box-sizing: border-box; }
+button, input, textarea { font-family: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+::selection { background: var(--tf-accent-soft); color: var(--tf-text); }
 
-*::-webkit-scrollbar {
-  width: 6px;
-}
+.stream-markdown [data-stream-markdown="tooltip"] { z-index: var(--markdown-tooltip-z-index); }
+*::-webkit-scrollbar { width: 6px; height: 6px; }
 *::-webkit-scrollbar-thumb {
-  background-color: var(--el-border-color);
+  background-color: var(--tf-line-strong);
   border-radius: 4px;
-  &:hover {
-    background-color: var(--el-border-color-darker);
-  }
+  &:hover { background-color: var(--tf-text-3); }
 }
-*::-webkit-scrollbar-track {
-  background-color: transparent;
+*::-webkit-scrollbar-track { background-color: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

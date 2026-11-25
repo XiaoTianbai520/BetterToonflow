@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Toonflow · 设置重设计（Krea 方向）</title>
+<link rel="stylesheet" href="redesign.css" />
+<script>if (location.hash.includes('light')) document.documentElement.classList.add('light');</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 2c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8Z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18h1.5a2.5 2.5 0 0 0 0-5H14a2 2 0 0 1 0-4h4a3 3 0 0 0 3-3c0-3.5-4-6-9-6Z"/><circle cx="7.5" cy="10.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="16.5" cy="9" r="1.2" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L10 21h4l.6-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-skill" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z"/><path d="M4 19a2 2 0 0 1 2-2h13M9 7h6"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-radius" viewBox="0 0 24 24"><path d="M4 20V10a6 6 0 0 1 6-6h10"/><path d="M4 20h16" opacity=".4"/></symbol>
+  <symbol id="i-fontSize" viewBox="0 0 24 24"><path d="M4 18 10 6l6 12M6.5 14h7M16 18l3-6 3 6"/></symbol>
+</svg>
+
+<div class="settingsStage" style="background:var(--canvasBg)">
+  <div class="dots"></div>
+  <div style="height:56px;background:var(--chrome);border-bottom:1px solid var(--lineSoft)"></div>
+  <div class="node" style="left:120px;top:150px;width:250px;height:190px"></div>
+  <div class="node" style="left:450px;top:120px;width:290px;height:300px"></div>
+  <div class="node" style="left:830px;top:170px;width:280px;height:330px"></div>
+  <div class="node" style="left:200px;top:450px;width:240px;height:150px"></div>
+  <div class="scrim"></div>
+
+  <div class="modal">
+    <div class="modalHead">
+      <h2>设置</h2>
+      <span class="hint"><svg class="icon sm"><use href="#i-check"/></svg>更改会自动保存</span>
+      <span class="ghostBtn"><svg class="icon"><use href="#i-close"/></svg></span>
+    </div>
+    <div class="modalBody">
+      <nav class="settingsNav">
+        <div class="settingsNavItem active"><svg class="icon"><use href="#i-palette"/></svg>界面设置</div>
+        <div class="settingsNavItem"><svg class="icon"><use href="#i-settings"/></svg>常规与快捷键</div>
+        <div class="settingsNavItem"><svg class="icon"><use href="#i-text"/></svg>文本模型供应商</div>
+        <div class="settingsNavItem"><svg class="icon"><use href="#i-image"/></svg>媒体模型供应商</div>
+        <div class="settingsNavItem"><svg class="icon"><use href="#i-skill"/></svg>技能与 FFmpeg</div>
+        <div class="settingsNavItem"><svg class="icon"><use href="#i-user"/></svg>个性化</div>
+      </nav>
+      <div class="settingsContent">
+        <h3>界面设置</h3>
+        <p class="intro">让创作空间更合你的习惯，修改会自动保存。</p>
+
+        <section class="settingSection">
+          <h4>外观模式</h4>
+          <div class="themeCards">
+            <div class="themeCard light">
+              <div class="preview light"><i></i><b></b></div>
+              <div class="tName">浅色</div>
+              <div class="tDesc">明亮清爽，适合白天</div>
+            </div>
+            <div class="themeCard dark">
+              <div class="preview dark"><i></i><b></b></div>
+              <div class="tName">深色</div>
+              <div class="tDesc">沉浸专注，适合长时间创作</div>
+            </div>
+            <div class="themeCard system">
+              <div class="preview system"><i></i><b></b></div>
+              <div class="tName">跟随系统</div>
+              <div class="tDesc">随系统自动切换</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="settingSection">
+          <h4>主题颜色</h4>
+          <p class="desc">用于按钮、选中状态与创作背景。</p>
+          <div class="colorRow">
+            <span class="swatch active" style="background:#6e9eff"></span>
+            <span class="swatch" style="background:#7c5cff"></span>
+            <span class="swatch" style="background:#14b8a6"></span>
+            <span class="swatch" style="background:#e8a33d"></span>
+            <span class="swatch" style="background:#e5636b"></span>
+            <span class="swatch" style="background:#e56ba0"></span>
+            <span class="swatch custom"><svg class="icon sm"><use href="#i-plus"/></svg></span>
+            <span class="colorValue">#6E9EFF</span>
+          </div>
+        </section>
+
+        <section class="settingSection">
+          <h4><svg class="icon"><use href="#i-fontSize"/></svg>字体大小</h4>
+          <p class="desc">统一调整界面、聊天和节点中的文字大小。</p>
+          <div class="sliderRow">
+            <div class="sliderTrack"><i style="width:37.5%"></i><b style="left:37.5%"></b></div>
+            <span class="sliderValue">100%</span>
+          </div>
+          <div class="sliderMarks"><span>85% 较小</span><span>100% 默认</span><span>125% 较大</span></div>
+        </section>
+
+        <section class="settingSection">
+          <h4><svg class="icon"><use href="#i-radius"/></svg>界面圆角</h4>
+          <p class="desc">同时作用于卡片、弹窗、按钮与节点。</p>
+          <div class="sliderRow">
+            <div class="sliderTrack"><i style="width:50%"></i><b style="left:50%"></b></div>
+            <span class="sliderValue">8 px</span>
+          </div>
+          <div class="sliderMarks"><span>0px 直角</span><span>8px 默认</span><span>16px 圆润</span></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelectorAll('svg use').forEach(u => {
+  const sym = document.querySelector(u.getAttribute('href'));
+  if (!sym) return;
+  const host = u.ownerSVGElement;
+  host.setAttribute('viewBox', sym.getAttribute('viewBox') || '0 0 24 24');
+  host.setAttribute('fill', 'none');
+  host.setAttribute('stroke', 'currentColor');
+  host.setAttribute('stroke-width', '1.6');
+  host.setAttribute('stroke-linecap', 'round');
+  host.setAttribute('stroke-linejoin', 'round');
+  host.innerHTML = sym.innerHTML;
+});
+</script>
+</body>
+</html>

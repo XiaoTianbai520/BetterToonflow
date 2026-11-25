@@ -1,5 +1,8 @@
 <template>
-  <el-dialog v-model="visible" title="设置" width="min(1080px, calc(100vw - 32px))" alignCenter appendToBody>
+  <el-dialog v-model="visible" class="settingsDialog" width="min(1080px, calc(100vw - 32px))" alignCenter appendToBody>
+    <template #header>
+      <div class="dialogTitle"><h2>设置</h2><span><icon-check :size="13" />更改会自动保存</span></div>
+    </template>
     <div class="settings">
       <aside class="sidebar" aria-label="设置分类">
         <template v-for="item in settingsPanels" :key="item.id">
@@ -36,7 +39,7 @@
 
 <script setup lang="ts">
 import { defineAsyncComponent, shallowRef } from "vue";
-import { IconPalette, IconSettings, IconPhotoVideo, IconBook, IconUserCog, IconSubtitlesAi } from "@tabler/icons-vue";
+import { IconPalette, IconSettings, IconPhotoVideo, IconBook, IconUserCog, IconSubtitlesAi, IconCheck } from "@tabler/icons-vue";
 
 const settingsPanels = [
   { id: "ui", label: "界面设置", icon: IconPalette, component: defineAsyncComponent(() => import("./panels/ui.vue")) },
@@ -50,17 +53,50 @@ const activePanel = shallowRef(settingsPanels[0]!);
 const visible = defineModel<boolean>({ default: false });
 </script>
 
+<style lang="scss">
+.el-dialog.settingsDialog {
+  overflow: hidden;
+  border: 1px solid var(--tf-line-strong);
+  border-radius: 18px;
+  background: var(--tf-panel);
+  box-shadow: var(--tf-shadow-modal);
+
+  .el-dialog__header {
+    margin: 0;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--tf-line-soft);
+  }
+  .el-dialog__headerbtn {
+    top: 14px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    .el-dialog__close { color: var(--tf-text-2); }
+  }
+  .el-dialog__body { padding: 0; color: var(--tf-text); }
+  .dialogTitle {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    h2 { margin: 0; color: var(--tf-text); font-size: 17px; font-weight: 600; }
+    span { display: flex; align-items: center; gap: 5px; color: var(--tf-text-3); font-size: 12px; font-weight: 400; }
+  }
+}
+</style>
+
 <style lang="scss" scoped>
 .settings {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  height: min(72vh, calc(100dvh - 140px));
+  grid-template-columns: 208px minmax(0, 1fr);
+  height: min(680px, calc(100dvh - 150px));
   overflow: hidden;
 
   .sidebar {
     min-height: 0;
     overflow-y: auto;
-    padding: 2px;
+    padding: 14px 10px;
+    border-right: 1px solid var(--tf-line-soft);
+    background: var(--tf-panel-2);
 
     .settingsItem {
       display: flex;
@@ -70,9 +106,9 @@ const visible = defineModel<boolean>({ default: false });
       padding: 10px 12px;
       margin-bottom: 4px;
       border: 0;
-      border-radius: var(--el-border-radius-base);
+      border-radius: 9px;
       background: transparent;
-      color: var(--el-text-color-regular);
+      color: var(--tf-text-2);
       font: inherit;
       text-align: start;
       cursor: pointer;
@@ -88,12 +124,12 @@ const visible = defineModel<boolean>({ default: false });
       }
 
       &:hover {
-        background: var(--el-fill-color-light);
+        background: var(--tf-panel-3);
       }
 
       &[aria-pressed="true"] {
-        background: var(--el-color-primary-light-9);
-        color: var(--el-color-primary);
+        background: var(--tf-accent-soft);
+        color: var(--tf-accent);
       }
 
       &:focus-visible {
@@ -106,13 +142,15 @@ const visible = defineModel<boolean>({ default: false });
     display: flex;
     flex-direction: column;
     min-height: 0;
-    padding: 0 20px;
+    padding: 24px 30px 0;
     overflow: hidden;
 
     .panelTitle {
       flex-shrink: 0;
       margin: 0 0 20px;
-      font-size: 18px;
+      color: var(--tf-text);
+      font-size: 16px;
+      font-weight: 600;
     }
 
     .panelContent {
@@ -139,7 +177,7 @@ const visible = defineModel<boolean>({ default: false });
       .settingsItem {
         justify-content: center;
         padding: 12px;
-        span {
+        > span:last-child {
           display: none;
         }
       }

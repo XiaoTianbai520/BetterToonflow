@@ -68,21 +68,47 @@ watchEffect(() => {
   root.style.colorScheme = dark ? "dark" : "light";
   root.style.fontSize = `${(16 * fontScale) / 100}px`;
   root.style.setProperty("--ui-radius", `${radius}px`);
-  root.style.setProperty("--el-color-primary", primaryColor);
+  const accent = !dark && primaryColor.toLowerCase() === "#6e9eff" ? "#3d7be0" : primaryColor;
+  root.style.setProperty("--tf-accent", accent);
+  root.style.setProperty("--tf-accent-soft", `color-mix(in srgb, ${accent} ${dark ? 14 : 10}%, transparent)`);
+  root.style.setProperty("--el-color-primary", accent);
   for (let level = 1; level <= 9; level++) {
     root.style.setProperty(
       `--el-color-primary-light-${level}`,
-      `color-mix(in srgb, ${primaryColor} ${100 - level * 10}%, ${dark ? "#141414" : "#fff"})`
+      `color-mix(in srgb, ${accent} ${100 - level * 10}%, ${dark ? "#14151a" : "#fff"})`
     );
   }
-  root.style.setProperty("--el-color-primary-dark-2", `color-mix(in srgb, ${primaryColor} 80%, ${dark ? "#fff" : "#000"})`);
+  root.style.setProperty("--el-color-primary-dark-2", `color-mix(in srgb, ${accent} 80%, ${dark ? "#fff" : "#000"})`);
 });
 </script>
 
 <style lang="scss">
 html {
-  background-color: var(--el-bg-color);
-  color: var(--el-text-color-primary);
+  background-color: var(--tf-bg);
+  color: var(--tf-text);
+}
+
+/* Element Plus 的暗色变量在本文件导入，因此在这里完成最终的 token 桥接。 */
+html.dark {
+  --el-bg-color: var(--tf-panel);
+  --el-bg-color-page: var(--tf-bg);
+  --el-bg-color-overlay: var(--tf-panel);
+  --el-text-color-primary: var(--tf-text);
+  --el-text-color-regular: var(--tf-message-text);
+  --el-text-color-secondary: var(--tf-text-2);
+  --el-text-color-placeholder: var(--tf-text-3);
+  --el-border-color: var(--tf-line);
+  --el-border-color-light: var(--tf-line);
+  --el-border-color-lighter: var(--tf-line-soft);
+  --el-border-color-extra-light: var(--tf-line-soft);
+  --el-fill-color: var(--tf-panel-3);
+  --el-fill-color-light: var(--tf-panel-2);
+  --el-fill-color-lighter: var(--tf-panel-2);
+  --el-fill-color-extra-light: var(--tf-inset);
+  --el-fill-color-dark: var(--tf-panel-3);
+  --el-box-shadow: var(--tf-shadow-float);
+  --el-box-shadow-light: var(--tf-shadow-node);
+  --el-box-shadow-lighter: var(--tf-shadow-node);
 }
 
 // 主题切换圆形扩散动效，坐标由触发点写入 --themeX/--themeY/--themeR。

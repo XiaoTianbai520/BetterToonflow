@@ -15,9 +15,8 @@
         @change="(value) => changeTheme(String(value))">
         <el-radio v-for="item in themes" :key="item.value" :value="item.value" border>
           <span class="themeLabel">
-            <component :is="item.icon" :size="22" />
-            <strong>{{ item.label }}</strong>
-            <small>{{ item.description }}</small>
+            <span class="themePreview" :class="item.value" aria-hidden="true"><i /><b /></span>
+            <span class="themeText"><strong><component :is="item.icon" :size="15" />{{ item.label }}</strong><small>{{ item.description }}</small></span>
           </span>
         </el-radio>
       </el-radio-group>
@@ -135,7 +134,7 @@ const themes = [
   { value: "system", label: "跟随系统", description: "自动切换", icon: IconDeviceDesktop },
 ];
 const colors = [
-  { value: "#409eff", label: "天空蓝" },
+  { value: "#6e9eff", label: "天空蓝" },
   { value: "#6366f1", label: "鸢尾紫" },
   { value: "#a855f7", label: "薰衣紫" },
   { value: "#e34b83", label: "蔷薇粉" },
@@ -223,36 +222,44 @@ function changeTheme(value: string) {
       :deep(.el-radio) {
         height: auto;
         margin: 0;
-        padding: 14px 10px;
+        padding: 12px;
         align-items: flex-start;
-        background: var(--el-fill-color-extra-light);
+        border: 1px solid var(--tf-line);
+        border-radius: 12px;
+        background: var(--tf-panel-2);
 
         &.is-checked {
-          background: var(--el-color-primary-light-9);
+          border-color: var(--tf-accent);
+          background: var(--tf-panel-2);
+          box-shadow: 0 0 0 3px var(--tf-accent-soft);
         }
-        .el-radio__input {
-          margin-top: 4px;
-        }
-        .el-radio__label {
-          min-width: 0;
-          padding-left: 8px;
-        }
+        .el-radio__input { display: none; }
+        .el-radio__label { min-width: 0; width: 100%; padding: 0; }
       }
 
       .themeLabel {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 11px;
+        width: 100%;
         white-space: normal;
 
-        strong {
-          font-size: 13px;
-          font-weight: 500;
+        .themePreview {
+          position: relative;
+          display: block;
+          height: 62px;
+          overflow: hidden;
+          border: 1px solid var(--tf-line-soft);
+          border-radius: 8px;
+          background: #f4f5f8;
+          &.dark { background: #101117; }
+          &.system { background: linear-gradient(105deg, #f4f5f8 50%, #101117 50%); }
+          i { position: absolute; top: 10px; left: 10px; width: 42%; height: 7px; border-radius: 3px; background: rgba(140,150,170,.5); }
+          b { position: absolute; top: 25px; left: 10px; width: 62%; height: 27px; border: 1px solid rgba(140,150,170,.3); border-radius: 5px; background: rgba(140,150,170,.25); }
         }
-        small {
-          color: var(--el-text-color-secondary);
-          font-size: 12px;
-        }
+        .themeText { display: flex; flex-direction: column; gap: 4px; }
+        strong { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; }
+        small { color: var(--tf-text-3); font-size: 11px; }
       }
     }
 
@@ -338,9 +345,7 @@ function changeTheme(value: string) {
     .settingSection .themeOptions {
       grid-template-columns: 1fr;
       .themeLabel {
-        flex-direction: row;
-        align-items: center;
-        flex-wrap: wrap;
+        flex-direction: column;
       }
     }
     .appearancePreview {

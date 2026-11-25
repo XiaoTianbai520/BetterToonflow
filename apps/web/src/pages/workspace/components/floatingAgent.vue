@@ -49,16 +49,17 @@ import { IconLayoutSidebarRight, IconAppWindowBottomRight } from "@tabler/icons-
 import agent from "@/components/agent/index.vue";
 
 const visible = defineModel<boolean>({ default: false });
+const props = withDefaults(defineProps<{ topOffset?: number }>(), { topOffset: 0 });
 const emit = defineEmits<{ resize: [width: number] }>();
-const docked = ref(false);
+const docked = ref(true);
 const viewport = reactive({ width: window.innerWidth, height: window.innerHeight });
 const gap = computed(() => Math.min(15, viewport.width / 2, viewport.height / 2));
 const maxWidth = computed(() => Math.max(0, docked.value ? viewport.width * 0.45 : viewport.width - gap.value * 2));
-const preferredWidth = ref(420);
+const preferredWidth = ref(340);
 const width = computed(() => Math.min(preferredWidth.value, maxWidth.value));
 const preferredHeight = ref<number>();
 const height = computed(() =>
-  docked.value ? viewport.height : Math.min(preferredHeight.value ?? viewport.height * 0.8, viewport.height - gap.value * 2)
+  docked.value ? viewport.height - props.topOffset : Math.min(preferredHeight.value ?? viewport.height * 0.8, viewport.height - gap.value * 2)
 );
 const resizeHandles = computed(
   () =>
@@ -78,7 +79,7 @@ const left = computed(() => Math.max(gap.value, Math.min(viewport.width - width.
 const top = computed(() => Math.max(gap.value, Math.min(viewport.height - height.value - bottom.value, viewport.height - gap.value - height.value)));
 const panelStyle = computed(() => ({
   left: `${docked.value ? viewport.width - width.value : left.value}px`,
-  top: `${docked.value ? 0 : top.value}px`,
+  top: `${docked.value ? props.topOffset : top.value}px`,
   width: `${width.value}px`,
   height: `${height.value}px`,
 }));
@@ -198,16 +199,17 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
   max-width: 100vw;
   max-height: 100dvh;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: var(--ui-radius-large, 12px);
-  background: color-mix(in srgb, var(--el-bg-color-overlay) 70%, transparent);
-  backdrop-filter: blur(6px);
-  box-shadow: var(--el-box-shadow-light);
+  border: 1px solid var(--tf-line);
+  border-radius: 14px;
+  background: var(--tf-panel);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--tf-shadow-float);
 
   &.docked {
     border-width: 0 0 0 1px;
+    border-color: var(--tf-line-soft);
     border-radius: 0;
-    background: var(--el-bg-color-overlay);
+    background: var(--tf-panel);
     box-shadow: none;
   }
 

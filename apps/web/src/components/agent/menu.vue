@@ -1,6 +1,7 @@
 <template>
   <header class="agentMenu">
     <el-button v-if="parentFile" class="backButton" text circle :icon="IconArrowLeft" aria-label="返回父 Agent" title="返回父 Agent" @click="emit('back')" />
+    <span v-else class="agentBadge" aria-hidden="true"><img :src="logoUrl" alt="" /></span>
     <el-input
       v-if="editingName && !parentFile"
       ref="nameInput"
@@ -14,6 +15,7 @@
       @blur="saveName" />
     <span v-else class="conversationName">
       <span class="conversationTitle" :class="{ readOnly: parentFile }" :title="name" :tabindex="sessionFile && !parentFile ? 0 : -1" @dblclick="editName" @keydown.enter.prevent="editName">{{ name }}</span>
+      <small v-if="!parentFile">Toonflow Agent · 当前工作区</small>
     </span>
     <div class="menuActions">
       <el-popover v-if="subAgents?.length" v-model:visible="subAgentsVisible" trigger="click" placement="bottom-end" :width="340" :showArrow="false" :popperStyle="{ maxWidth: 'calc(100vw - 24px)' }">
@@ -85,6 +87,7 @@
 import { nextTick, ref, watch } from "vue";
 import { ElMessageBox, type InputInstance } from "element-plus";
 import type { AgentHistory, AgentSubAgent } from "./types";
+import logoUrl from "@toonflow/assets/logo.svg";
 import {
   IconMessagePlus, IconHistory,
   IconX, IconPencil, IconTrash,
@@ -157,10 +160,22 @@ async function renameHistory(item: AgentHistory) {
 .agentMenu {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
   flex-shrink: 0;
   min-width: 0;
-  padding: 12px 12px 0;
+  padding: 12px;
+  border-bottom: 1px solid var(--tf-line-soft);
+
+  .agentBadge {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, #2b3f6e, #16213c);
+    img { width: 17px; height: 17px; filter: invert(1); }
+  }
 
   .backButton {
     flex-shrink: 0;
@@ -178,14 +193,18 @@ async function renameHistory(item: AgentHistory) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 500;
 
     .conversationTitle {
+      display: block;
+      overflow: hidden;
       cursor: text;
       user-select: text;
+      text-overflow: ellipsis;
       &.readOnly { cursor: default; }
     }
+    small { display: block; margin-top: 2px; color: var(--tf-text-3); font-size: 10.5px; font-weight: 400; }
   }
 
   .menuActions {

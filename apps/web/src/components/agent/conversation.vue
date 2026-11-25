@@ -1042,10 +1042,12 @@ watch(() => !props.initialSession?.parentFile && !!workspaceStore.pendingAgentMe
 
       &.user .t-chat__content .t-chat__detail {
         width: auto;
-        max-width: 80%;
-        padding: 6px 10px;
-        border-radius: calc(var(--ui-radius) * 1.25);
-        background: color-mix(in srgb, var(--el-text-color-secondary) 12%, var(--el-bg-color));
+        max-width: 84%;
+        padding: 10px 12px;
+        border: 1px solid var(--tf-bubble-border);
+        border-radius: 12px 12px 4px 12px;
+        background: var(--tf-bubble);
+        color: var(--tf-text);
       }
     }
 
@@ -1139,24 +1141,25 @@ watch(() => !props.initialSession?.parentFile && !!workspaceStore.pendingAgentMe
   }
 
   .messageInput {
-    --chat-text: var(--el-text-color-primary);
-    --chat-text-placeholder: var(--el-text-color-placeholder);
+    --chat-text: var(--tf-text);
+    --chat-text-placeholder: var(--tf-text-3);
     --chat-rect-padding: 12px;
     --chat-mention-text: var(--el-color-primary);
     position: relative;
     flex-shrink: 0;
     margin: 0 12px 8px;
-    border: 1px solid var(--el-border-color-light);
-    border-radius: calc(var(--ui-radius) * 2.75);
-    background: var(--el-bg-color);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+    border: 1px solid var(--tf-line);
+    border-radius: 14px;
+    background: var(--tf-inset);
+    box-shadow: none;
 
     &:focus-within {
-      border-color: var(--el-color-primary-light-5);
+      border-color: var(--tf-accent);
+      box-shadow: 0 0 0 3px var(--tf-accent-soft);
     }
 
     &.draggingAttachments {
-      border-color: var(--el-color-primary-light-5);
+      border-color: var(--tf-accent);
     }
 
     .attachmentDropHint {
@@ -1274,10 +1277,14 @@ watch(() => !props.initialSession?.parentFile && !!workspaceStore.pendingAgentMe
       }
 
       .sendButton {
-        width: 34px;
-        height: 34px;
+        width: 32px;
+        height: 32px;
         border: none;
+        background: var(--tf-cta);
+        color: var(--tf-cta-text);
         transform: translateY(-2px);
+        &:hover { opacity: .85; }
+        &.is-disabled { opacity: .4; }
       }
     }
   }

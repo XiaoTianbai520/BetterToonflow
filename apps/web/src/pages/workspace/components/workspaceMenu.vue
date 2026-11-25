@@ -1,15 +1,14 @@
 <template>
   <div class="workspaceMenu">
-    <el-card shadow="never" :bodyStyle="{ padding: '3px 6px' }">
-      <div class="menuContent">
-        <el-button class="toolButton" text aria-label="退出项目" title="退出项目" @click="exitVisible = true">
-          <icon-logout :size="18" aria-hidden="true" />
-        </el-button>
-        <el-button class="toolButton" text aria-label="设置" title="设置" @click="emit('openSettings')">
-          <icon-settings :size="18" aria-hidden="true" />
-        </el-button>
-      </div>
-    </el-card>
+    <div class="menuContent">
+      <el-button class="toolButton" text aria-label="退出项目" title="退出项目" @click="exitVisible = true">
+        <icon-logout :size="20" aria-hidden="true" />
+      </el-button>
+      <el-button class="toolButton" text aria-label="设置" title="设置" @click="emit('openSettings')">
+        <icon-settings :size="20" aria-hidden="true" />
+      </el-button>
+      <span class="avatar" aria-hidden="true">T</span>
+    </div>
     <el-dialog v-model="exitVisible" title="退出项目" width="360px" alignCenter appendToBody>
       <span>是否退出当前项目并返回首页？</span>
       <template #footer>
@@ -45,14 +44,29 @@ async function exitProject() {
 .workspaceMenu {
   .menuContent {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 
     .toolButton {
-      width: 32px;
-      height: 32px;
+      width: 40px;
+      height: 40px;
       margin: 0;
       padding: 0;
+      border-radius: 10px;
+      color: var(--tf-text-3);
+      &:hover { background: var(--tf-panel-2); color: var(--tf-text); }
+    }
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      margin-top: 6px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3a4d7a, #5b3f6e);
+      color: #fff;
+      font-size: 12px;
     }
   }
 }

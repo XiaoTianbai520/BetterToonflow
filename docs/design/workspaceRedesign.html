@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Toonflow · 工作台重设计（Krea 方向）</title>
+<link rel="stylesheet" href="redesign.css" />
+<script>if (location.hash.includes('light')) document.documentElement.classList.add('light');</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 2c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8Z"/><circle cx="19" cy="4" r="1.4" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-canvas" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><path d="M10 6.5h5.5a2 2 0 0 1 2 2V14"/></symbol>
+  <symbol id="i-assets" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-skill" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z"/><path d="M4 19a2 2 0 0 1 2-2h13M9 7h6"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H15a3 3 0 0 1 3 3v6.5M6 8.5V15a3 3 0 0 0 3 3h6.5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L10 21h4l.6-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 4v4h4M12 8v4l3 2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7ZM10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+  <symbol id="i-chevronDown" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chevronLeft" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m4 18 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3Z"/></symbol>
+  <symbol id="i-audio" viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6L20 8"/><path d="M20 4v4h-4"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M8 5 3 10l5 5"/><path d="M3 10h11a6 6 0 0 1 0 12h-2"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m16 5 5 5-5 5"/><path d="M21 10H10a6 6 0 0 0 0 12h2"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11m0-5.5a1.5 1.5 0 0 1 3 0V11m0-4a1.5 1.5 0 0 1 3 0v6m0-3a1.5 1.5 0 0 1 3 0v5c0 4-2.5 6-6 6s-5-1.5-6.5-4L5 13c-1-1.5.5-3 2-2l1 1Z"/></symbol>
+  <symbol id="i-pointer" viewBox="0 0 24 24"><path d="m5 3 14 8-6.5 1.5L9 19Z"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24"><path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><rect x="7" y="8" width="4" height="3" rx="1"/><rect x="14" y="12" width="4" height="3" rx="1"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-dock" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></symbol>
+  <symbol id="i-at" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 0 0 5 0V12a9 9 0 1 0-4 7.5"/></symbol>
+  <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m20 11-8.5 8.5a5 5 0 0 1-7-7L13 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L14 7"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-loader" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+</svg>
+
+<div class="app">
+  <nav class="rail">
+    <div class="railLogo"><svg class="icon lg"><use href="#i-logo"/></svg></div>
+    <div class="railItem active"><svg class="icon lg"><use href="#i-canvas"/></svg></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-assets"/></svg></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-doc"/></svg></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-flow"/></svg></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-skill"/></svg></div>
+    <div class="railDivider"></div>
+    <div class="railItem"><svg class="icon lg"><use href="#i-search"/></svg></div>
+    <div class="railBottom">
+      <div class="railItem"><svg class="icon lg"><use href="#i-settings"/></svg></div>
+      <div class="avatar" style="margin-top:10px">苏</div>
+    </div>
+  </nav>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumbs">
+        <span class="proj">localMediaTest</span>
+        <span class="sep">/</span>
+        <span class="file">画布1.json <svg class="icon sm"><use href="#i-chevronDown"/></svg></span>
+      </div>
+      <div class="segmented">
+        <span class="segItem active"><svg class="icon sm"><use href="#i-canvas"/></svg>画布</span>
+        <span class="segItem"><svg class="icon sm"><use href="#i-doc"/></svg>文档</span>
+      </div>
+      <div class="topRight">
+        <span class="saved"><svg class="icon sm"><use href="#i-check"/></svg>已保存</span>
+        <span class="credit">⚡ <b>¥126.40</b> 本月算力</span>
+        <span class="ghostBtn"><svg class="icon"><use href="#i-history"/></svg></span>
+        <span class="ghostBtn"><svg class="icon"><use href="#i-bell"/></svg></span>
+      </div>
+    </header>
+
+    <div class="bodyRow">
+      <aside class="library">
+        <div class="libTabs">
+          <span class="libTab active">素材</span>
+          <span class="libTab">节点</span>
+          <span class="libTab">历史</span>
+        </div>
+        <div class="libSearch"><svg class="icon sm"><use href="#i-search"/></svg>搜索素材、节点或历史</div>
+        <div class="primaryBtn"><svg class="icon"><use href="#i-plus"/></svg>添加节点</div>
+        <div class="libSection"><h4>最近生成</h4><span>全部 →</span></div>
+        <div class="assetGrid">
+          <div class="asset">
+            <div class="thumb"><svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="th1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a2450"/><stop offset="1" stop-color="#c97a4a"/></linearGradient></defs><rect width="200" height="100" fill="url(#th1)"/><g fill="#150d20"><circle cx="60" cy="42" r="9"/><path d="M50 52h20l6 34H44Z"/><circle cx="104" cy="42" r="9"/><path d="M94 52h20l6 34H88Z"/><circle cx="148" cy="42" r="9"/><path d="M138 52h20l6 34h-32Z"/></g></svg></div>
+            <div class="meta"><div class="name">林晚 · 三视图</div><div class="sub"><span class="dot" style="background:var(--cImage)"></span>图像 · 2 分钟前</div></div>
+          </div>
+          <div class="asset">
+            <div class="thumb"><svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"><rect width="200" height="100" fill="#0b1a30"/><rect x="18" y="22" width="34" height="60" fill="#0e243d"/><rect x="140" y="14" width="42" height="68" fill="#0e243d"/><rect x="26" y="36" width="6" height="24" fill="#e56ba0" opacity=".85"/><rect x="148" y="28" width="22" height="5" fill="#59d6c4" opacity=".85"/><g stroke="#a9c8ea" stroke-width="1" opacity=".3"><path d="M70 6 62 34"/><path d="M96 2 88 30"/><path d="M122 10 114 38"/><path d="M84 48 76 76"/><path d="M110 54 102 82"/></g><rect y="80" width="200" height="20" fill="#060d18"/></svg></div>
+            <div class="meta"><div class="name">雨夜街头 · 场景</div><div class="sub"><span class="dot" style="background:var(--cVideo)"></span>视频 · 8 分钟前</div></div>
+          </div>
+          <div class="asset">
+            <div class="thumb"><svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="th3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a2c4e"/><stop offset="1" stop-color="#e0995a"/></linearGradient></defs><rect width="200" height="100" fill="url(#th3)"/><circle cx="140" cy="46" r="18" fill="#f7cf8b"/><path d="M0 66 50 44 96 68 140 52 200 72V100H0Z" fill="#2c1a30"/></svg></div>
+            <div class="meta"><div class="name">天台 · 黄昏</div><div class="sub"><span class="dot" style="background:var(--cImage)"></span>图像 · 21 分钟前</div></div>
+          </div>
+          <div class="asset">
+            <div class="thumb"><svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="th4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f2b33"/><stop offset="1" stop-color="#1c4a4a"/></linearGradient></defs><rect width="200" height="100" fill="url(#th4)"/><rect x="66" y="30" width="68" height="44" rx="8" fill="#0a181c"/><circle cx="100" cy="52" r="17" fill="#123a42"/><circle cx="100" cy="52" r="10" fill="#1f5b64"/><circle cx="96" cy="48" r="3.5" fill="#7fd4d0" opacity=".8"/></svg></div>
+            <div class="meta"><div class="name">道具 · 旧相机</div><div class="sub"><span class="dot" style="background:var(--cImage)"></span>图像 · 40 分钟前</div></div>
+          </div>
+          <div class="asset">
+            <div class="thumb"><svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="th5" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3d1420"/><stop offset="1" stop-color="#a83c34"/></linearGradient></defs><rect width="200" height="100" fill="url(#th5)"/><g stroke="#f2b18a" stroke-width="2" opacity=".5"><path d="M10 30h60M0 50h48M16 70h56"/></g><g fill="#1c0a10"><circle cx="128" cy="34" r="10"/><path d="M116 46h24l8 40h-40Z"/></g></svg></div>
+            <div class="meta"><div class="name">分镜 07 · 追逐</div><div class="sub"><span class="dot" style="background:var(--cVideo)"></span>视频 · 1 小时前</div></div>
+          </div>
+          <div class="asset">
+            <div class="thumb"><svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="th6" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#141c3f"/><stop offset="1" stop-color="#4a2c66"/></linearGradient></defs><rect width="200" height="100" fill="url(#th6)"/><circle cx="140" cy="34" r="26" fill="#6e9eff" opacity=".35"/><rect x="20" y="56" width="76" height="8" rx="3" fill="#e6e9f2" opacity=".85"/><rect x="20" y="72" width="48" height="6" rx="3" fill="#e6e9f2" opacity=".4"/></svg></div>
+            <div class="meta"><div class="name">海报 · 主视觉</div><div class="sub"><span class="dot" style="background:var(--cImage)"></span>图像 · 昨天</div></div>
+          </div>
+        </div>
+        <div class="libSection"><h4>我的素材</h4><span>全部 →</span></div>
+        <div class="assetGrid">
+          <div class="asset">
+            <div class="thumb"><svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="th7" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#241a38"/><stop offset="1" stop-color="#8a4356"/></linearGradient></defs><rect width="200" height="100" fill="url(#th7)"/><g fill="#100b18"><circle cx="100" cy="34" r="12"/><path d="M86 48h28l10 44H76Z"/></g></svg></div>
+            <div class="meta"><div class="name">角色 · 林晚</div><div class="sub"><svg class="icon sm"><use href="#i-lock"/></svg>已锁定</div></div>
+          </div>
+          <div class="asset">
+            <div class="thumb"><svg viewBox="0 0 200 100" preserveAspectRatio="xMidYMid slice"><rect width="200" height="100" fill="#0a1424"/><rect x="30" y="18" width="44" height="66" fill="#10233c"/><rect x="128" y="10" width="46" height="74" fill="#10233c"/><rect x="38" y="30" width="7" height="26" fill="#e56ba0" opacity=".85"/><rect x="136" y="24" width="24" height="6" fill="#59d6c4" opacity=".85"/><rect y="82" width="200" height="18" fill="#050b14"/></svg></div>
+            <div class="meta"><div class="name">场景 · 雨夜街头</div><div class="sub"><svg class="icon sm"><use href="#i-lock"/></svg>已锁定</div></div>
+          </div>
+        </div>
+        <div class="libFoot"><svg class="icon sm"><use href="#i-chevronLeft"/></svg>收起面板</div>
+      </aside>
+
+      <section class="canvasWrap">
+        <div class="dots"></div>
+        <svg class="edges" viewBox="0 0 946 944" preserveAspectRatio="none">
+          <path d="M276 219 C 302 219, 304 229, 330 229" stroke="var(--cText)" stroke-opacity=".55" stroke-width="2" fill="none"/>
+          <path d="M610 229 C 624 229, 624 281, 636 281" stroke="var(--cImage)" stroke-opacity=".75" stroke-width="2" fill="none"/>
+          <path d="M276 494 C 410 494, 500 345, 636 345" stroke="var(--cAudio)" stroke-opacity=".45" stroke-width="2" fill="none"/>
+        </svg>
+
+        <div class="ctxToolbar" style="left:330px;top:40px">
+          <span class="tb accent"><svg class="icon"><use href="#i-refresh"/></svg></span>
+          <span class="tb"><svg class="icon"><use href="#i-copy"/></svg></span>
+          <span class="tb"><svg class="icon"><use href="#i-save"/></svg></span>
+          <span class="sep"></span>
+          <span class="tb" style="color:var(--danger)"><svg class="icon"><use href="#i-trash"/></svg></span>
+        </div>
+
+        <div class="node" style="left:36px;top:120px;width:240px">
+          <div class="nodeHead">
+            <span class="nIcon" style="background:rgba(232,163,61,.14);color:var(--cText)"><svg class="icon"><use href="#i-text"/></svg></span>
+            <span class="nTitle">分镜脚本 · 第 1 集</span>
+            <span class="nState"><span class="dot" style="background:var(--ok)"></span></span>
+          </div>
+          <div class="nodeBody">
+            <div class="scriptBox"><b>镜头 03 · 雨夜街头</b><br/>林晚撑伞走过霓虹灯下的长街，风衣被雨水打湿。镜头从背后缓慢推近，环境音是密集的雨声与远处的车流。<br/><b>时长</b> 6s · <b>景别</b> 中近景</div>
+          </div>
+          <span class="port out" style="background:var(--cText)"></span>
+        </div>
+
+        <div class="node selected" style="left:330px;top:88px;width:280px">
+          <div class="nodeHead">
+            <span class="nIcon" style="background:rgba(229,107,160,.14);color:var(--cImage)"><svg class="icon"><use href="#i-image"/></svg></span>
+            <span class="nTitle">角色设定 · 林晚</span>
+            <span class="nState"><span class="dot" style="background:var(--ok)"></span>已完成</span>
+          </div>
+          <div class="nodeBody">
+            <div class="nodePreview">
+              <svg viewBox="0 0 560 315" preserveAspectRatio="xMidYMid slice">
+                <defs><linearGradient id="skyA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b1d43"/><stop offset=".55" stop-color="#8a4356"/><stop offset="1" stop-color="#e0995a"/></linearGradient></defs>
+                <rect width="560" height="315" fill="url(#skyA)"/>
+                <circle cx="392" cy="168" r="46" fill="#f7cf8b" opacity=".95"/>
+                <path d="M0 205 90 160 170 205 250 172 340 210 430 178 560 214V315H0Z" fill="#3a2338" opacity=".8"/>
+                <g fill="#221528"><rect x="30" y="150" width="46" height="120"/><rect x="86" y="180" width="30" height="90"/><rect x="452" y="140" width="52" height="130"/><rect x="512" y="176" width="34" height="94"/></g>
+                <rect y="255" width="560" height="60" fill="#170f22"/>
+                <g fill="#100b18"><circle cx="252" cy="140" r="16"/><path d="M236 158h32l14 92h-60Z"/><rect x="238" y="250" width="10" height="42"/><rect x="256" y="250" width="10" height="42"/></g>
+                <ellipse cx="252" cy="297" rx="58" ry="5" fill="#000" opacity=".35"/>
+              </svg>
+            </div>
+            <div class="chips">
+              <span class="chip">Flux Pro</span><span class="chip">16:9</span><span class="chip">参考 ×2</span><span class="chip price">¥0.42</span>
+            </div>
+            <div class="nodeFoot">
+              <span class="tag">已存入素材库</span>
+              <span class="miniBtn"><svg class="icon sm"><use href="#i-refresh"/></svg>重跑</span>
+            </div>
+          </div>
+          <span class="port in" style="background:var(--cText)"></span>
+          <span class="port out" style="background:var(--cImage)"></span>
+        </div>
+
+        <div class="node" style="left:636px;top:120px;width:280px">
+          <div class="nodeHead">
+            <span class="nIcon" style="background:rgba(76,195,138,.14);color:var(--cVideo)"><svg class="icon"><use href="#i-video"/></svg></span>
+            <span class="nTitle">雨夜街头 · 镜头03</span>
+            <span class="nState"><span class="dot" style="background:var(--accent)"></span>生成中</span>
+          </div>
+          <div class="nodeBody">
+            <div class="nodePreview">
+              <svg viewBox="0 0 560 315" preserveAspectRatio="xMidYMid slice">
+                <defs><linearGradient id="skyB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050b18"/><stop offset="1" stop-color="#122a44"/></linearGradient></defs>
+                <rect width="560" height="315" fill="url(#skyB)"/>
+                <g fill="#0a1729"><rect x="20" y="60" width="90" height="200"/><rect x="130" y="110" width="70" height="150"/><rect x="360" y="40" width="100" height="220"/><rect x="470" y="100" width="70" height="160"/></g>
+                <g fill="#7fb2e8" opacity=".28"><rect x="40" y="80" width="8" height="10"/><rect x="60" y="80" width="8" height="10"/><rect x="40" y="104" width="8" height="10"/><rect x="150" y="130" width="8" height="10"/><rect x="168" y="130" width="8" height="10"/><rect x="384" y="120" width="8" height="10"/><rect x="404" y="120" width="8" height="10"/><rect x="424" y="140" width="8" height="10"/><rect x="490" y="120" width="8" height="10"/><rect x="510" y="140" width="8" height="10"/></g>
+                <rect x="48" y="120" width="16" height="70" rx="4" fill="#e56ba0" opacity=".85"/>
+                <ellipse cx="56" cy="155" rx="46" ry="60" fill="#e56ba0" opacity=".14"/>
+                <rect x="392" y="90" width="52" height="14" rx="4" fill="#59d6c4" opacity=".85"/>
+                <ellipse cx="418" cy="97" rx="70" ry="40" fill="#59d6c4" opacity=".12"/>
+                <rect y="252" width="560" height="63" fill="#060b14"/>
+                <rect x="40" y="262" width="32" height="40" fill="#e56ba0" opacity=".12"/>
+                <rect x="384" y="260" width="70" height="30" fill="#59d6c4" opacity=".1"/>
+                <g stroke="#a9c8ea" stroke-width="1.4" opacity=".22"><path d="M60 10 44 60"/><path d="M140 30 124 80"/><path d="M230 6 214 56"/><path d="M320 24 304 74"/><path d="M420 10 404 60"/><path d="M500 30 484 80"/><path d="M100 120 84 170"/><path d="M270 110 254 160"/><path d="M460 130 444 180"/></g>
+                <g fill="#04070d"><path d="M236 196q44-44 88 0Z"/><rect x="278" y="196" width="3" height="26"/><circle cx="280" cy="214" r="9"/><path d="M270 224h20l6 38h-32Z"/><rect x="270" y="262" width="7" height="26"/><rect x="283" y="262" width="7" height="26"/></g>
+              </svg>
+              <div class="playBar">
+                <svg class="icon sm" style="color:#fff"><use href="#i-play"/></svg>
+                <span class="track"><i></i></span>
+                <span class="time">00:02 / 00:06</span>
+              </div>
+            </div>
+            <div class="progressWrap">
+              <div class="progressMeta"><span>生成中 · 预计剩余 40s</span><span>68%</span></div>
+              <div class="progressBar"><i style="width:68%"></i></div>
+            </div>
+            <div class="chips">
+              <span class="chip">Veo 3</span><span class="chip">6s</span><span class="chip">首尾帧 ×2</span><span class="chip price">¥3.60</span>
+            </div>
+          </div>
+          <span class="port in" style="background:var(--cImage)"></span>
+          <span class="port in" style="background:var(--cAudio);top:74%"></span>
+          <span class="port out" style="background:var(--cVideo)"></span>
+        </div>
+
+        <div class="node" style="left:36px;top:420px;width:240px">
+          <div class="nodeHead">
+            <span class="nIcon" style="background:rgba(158,140,255,.14);color:var(--cAudio)"><svg class="icon"><use href="#i-audio"/></svg></span>
+            <span class="nTitle">旁白 · 林晚</span>
+            <span class="nState"><span class="dot" style="background:var(--ok)"></span></span>
+          </div>
+          <div class="nodeBody">
+            <div class="wave">
+              <i style="height:20%"></i><i style="height:45%"></i><i style="height:70%"></i><i style="height:38%"></i><i style="height:88%"></i><i style="height:60%"></i><i style="height:32%"></i><i style="height:76%"></i><i style="height:52%"></i><i style="height:95%"></i><i style="height:64%"></i><i style="height:40%"></i><i style="height:72%"></i><i style="height:30%"></i><i style="height:58%"></i><i style="height:82%"></i><i style="height:44%"></i><i style="height:66%"></i><i style="height:26%"></i><i style="height:50%"></i><i style="height:78%"></i><i style="height:36%"></i>
+            </div>
+            <div class="chips"><span class="chip">音色 · 清冷女声</span><span class="chip">12.4s</span><span class="chip price">¥0.08</span></div>
+          </div>
+          <span class="port in" style="background:var(--cText)"></span>
+          <span class="port out" style="background:var(--cAudio)"></span>
+        </div>
+
+        <div class="minimap">
+          <svg viewBox="0 0 158 104">
+            <rect x="12" y="18" width="34" height="24" rx="3" fill="var(--miniNode)"/>
+            <rect x="58" y="12" width="44" height="34" rx="3" fill="var(--miniNode)" stroke="#6e9eff" stroke-width="1.2"/>
+            <rect x="112" y="20" width="34" height="30" rx="3" fill="var(--miniNode)"/>
+            <rect x="12" y="62" width="34" height="18" rx="3" fill="var(--miniNode)"/>
+            <rect x="4" y="4" width="120" height="86" rx="4" fill="none" stroke="#6e9eff" stroke-opacity=".5" stroke-width="1" stroke-dasharray="3 3"/>
+          </svg>
+        </div>
+
+        <div class="toolPill">
+          <span class="tb primary"><svg class="icon"><use href="#i-plus"/></svg></span>
+          <span class="tb active"><svg class="icon"><use href="#i-pointer"/></svg></span>
+          <span class="tb"><svg class="icon"><use href="#i-hand"/></svg></span>
+          <span class="sep"></span>
+          <span class="tb"><svg class="icon"><use href="#i-undo"/></svg></span>
+          <span class="tb"><svg class="icon"><use href="#i-redo"/></svg></span>
+          <span class="sep"></span>
+          <span class="zoom">100%</span>
+          <span class="tb"><svg class="icon"><use href="#i-fit"/></svg></span>
+          <span class="tb active"><svg class="icon"><use href="#i-map"/></svg></span>
+        </div>
+      </section>
+
+      <aside class="agent">
+        <div class="agentHead">
+          <span class="agentBadge"><svg class="icon"><use href="#i-logo"/></svg></span>
+          <div>
+            <div class="t">Toonflow Agent</div>
+            <div class="s">当前画布 · 画布1.json</div>
+          </div>
+          <div class="ops">
+            <span class="ghostBtn"><svg class="icon sm"><use href="#i-history"/></svg></span>
+            <span class="ghostBtn"><svg class="icon sm"><use href="#i-dock"/></svg></span>
+            <span class="ghostBtn"><svg class="icon sm"><use href="#i-close"/></svg></span>
+          </div>
+        </div>
+        <div class="agentBody">
+          <div class="msgUser">把第 3 镜改成雨夜街头，保留林晚的风衣造型</div>
+          <div class="msgAgent">
+            <div class="who"><svg class="icon sm"><use href="#i-logo"/></svg>Toonflow Agent</div>
+            已更新镜头 03 的场景与氛围，角色参考与风衣设定保持不变。视频正在生成，完成后我会同步到分镜表。
+          </div>
+          <div class="toolCard">
+            <div class="toolRow">
+              <svg class="icon sm" style="color:var(--ok)"><use href="#i-check"/></svg>
+              <span class="label">读取 画布1.json<small>定位到「雨夜街头 · 镜头03」</small></span>
+            </div>
+            <div class="toolRow">
+              <svg class="icon sm" style="color:var(--ok)"><use href="#i-check"/></svg>
+              <span class="label">更新生成参数<small>场景 → 雨夜街头 · 保留角色参考 ×2</small></span>
+            </div>
+            <div class="toolRow">
+              <svg class="icon sm" style="color:var(--accent)"><use href="#i-loader"/></svg>
+              <span class="label">正在生成视频<small>Veo 3 · 6s · 预计 ¥3.60</small></span>
+              <span style="color:var(--accent);font-size:11px">68%</span>
+            </div>
+            <div style="padding:0 12px 11px"><div class="progressBar"><i style="width:68%"></i></div></div>
+          </div>
+          <div class="suggests">
+            <span class="suggest">查看分镜表</span>
+            <span class="suggest">生成对应配音</span>
+            <span class="suggest">合成单集预览</span>
+          </div>
+        </div>
+        <div class="composer">
+          <div class="placeholder">输入消息，@ 提及节点输出或全局素材…</div>
+          <div class="composerBar">
+            <span class="modelChip">deepseek-flash <svg class="icon sm"><use href="#i-chevronDown"/></svg></span>
+            <span class="ghostBtn"><svg class="icon"><use href="#i-at"/></svg></span>
+            <span class="ghostBtn"><svg class="icon"><use href="#i-paperclip"/></svg></span>
+            <span class="sendBtn"><svg class="icon"><use href="#i-send"/></svg></span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<script>
+document.querySelectorAll('svg use').forEach(u => {
+  const sym = document.querySelector(u.getAttribute('href'));
+  if (!sym) return;
+  const host = u.ownerSVGElement;
+  host.setAttribute('viewBox', sym.getAttribute('viewBox') || '0 0 24 24');
+  host.setAttribute('fill', 'none');
+  host.setAttribute('stroke', 'currentColor');
+  host.setAttribute('stroke-width', '1.6');
+  host.setAttribute('stroke-linecap', 'round');
+  host.setAttribute('stroke-linejoin', 'round');
+  host.innerHTML = sym.innerHTML;
+});
+</script>
+</body>
+</html>

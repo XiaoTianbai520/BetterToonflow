@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Toonflow · 首页重设计（Krea 方向）</title>
+<link rel="stylesheet" href="redesign.css" />
+<script>if (location.hash.includes('light')) document.documentElement.classList.add('light');</script>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M12 2c1 5 3 7 8 8-5 1-7 3-8 8-1-5-3-7-8-8 5-1 7-3 8-8Z"/><circle cx="19" cy="4" r="1.4" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L10 21h4l.6-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2Z"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.15c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.75 2.69 1.25 3.35.95.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.12v3.15c0 .3.21.67.8.55A11.51 11.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></symbol>
+  <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m20 11-8.5 8.5a5 5 0 0 1-7-7L13 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L14 7"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-chevronDown" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M7 4v16m0 0-3-3m3 3 3-3M17 20V4m0 0-3 3m3-3 3 3"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5Z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+</svg>
+
+<div class="homeBg"><div class="homeGlow"></div><div class="homeDots"></div></div>
+
+<header class="homeTop">
+  <div class="brand">
+    <span class="railLogo" style="margin:0"><svg class="icon lg"><use href="#i-logo"/></svg></span>
+    Toonflow
+  </div>
+  <div class="ops">
+    <span class="outlineBtn"><svg class="icon"><use href="#i-github"/></svg>GitHub</span>
+    <span class="outlineBtn"><svg class="icon"><use href="#i-settings"/></svg>设置</span>
+    <span class="avatar">苏</span>
+  </div>
+</header>
+
+<section class="hero" style="margin-top:40px">
+  <span class="pillBadge"><svg class="icon sm"><use href="#i-logo"/></svg>AI 短剧工作台</span>
+  <h1 style="font-size:40px">把故事，变成画面</h1>
+  <p class="sub">从剧本到分镜，从角色到成片，一张画布完成。</p>
+
+  <div class="promptCard" style="margin-top:30px">
+    <span class="attachChip"><svg class="icon sm"><use href="#i-doc"/></svg>第一章 · 雨夜.txt<span class="x"><svg class="icon sm"><use href="#i-close"/></svg></span></span>
+    <div class="promptText" style="min-height:64px">
+      描述你的短剧创意，或粘贴一段小说章节…<br/>
+      <span style="opacity:.65;font-size:13.5px">例如：把这段故事拆成 6 个分镜，保留主角的风衣造型，雨夜氛围。</span>
+    </div>
+    <div class="promptBar">
+      <span class="dirChip"><svg class="icon"><use href="#i-folder"/></svg>localMediaTest<svg class="icon sm"><use href="#i-chevronDown"/></svg></span>
+      <span class="iconBtn"><svg class="icon"><use href="#i-paperclip"/></svg></span>
+      <span class="modelChip" style="margin-left:auto">deepseek-flash<svg class="icon sm"><use href="#i-chevronDown"/></svg></span>
+      <span class="ctaBtn" style="margin-left:0">开始创作<svg class="icon"><use href="#i-send"/></svg></span>
+    </div>
+  </div>
+
+  <div class="templates">
+    <div class="tpl">
+      <div class="cover"><svg viewBox="0 0 280 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="tp1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2447"/><stop offset="1" stop-color="#3c2a5e"/></linearGradient></defs><rect width="280" height="100" fill="url(#tp1)"/><g fill="#6e9eff" opacity=".55"><rect x="36" y="24" width="44" height="52" rx="5"/><rect x="96" y="24" width="44" height="52" rx="5"/><rect x="156" y="24" width="44" height="52" rx="5"/></g><g fill="#0f1530"><rect x="42" y="30" width="32" height="26" rx="3"/><rect x="102" y="30" width="32" height="26" rx="3"/><rect x="162" y="30" width="32" height="26" rx="3"/></g><path d="M212 50h34m0 0-6-6m6 6-6 6" stroke="#a9c6ff" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+      <div class="info"><h5>短剧分镜</h5><p>从小说章节拆解为分镜脚本与画面</p></div>
+    </div>
+    <div class="tpl">
+      <div class="cover"><svg viewBox="0 0 280 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="tp2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a2450"/><stop offset="1" stop-color="#c97a4a"/></linearGradient></defs><rect width="280" height="100" fill="url(#tp2)"/><g fill="#150d20"><circle cx="104" cy="34" r="11"/><path d="M92 47h24l8 40H84Z"/><circle cx="150" cy="34" r="11"/><path d="M138 47h24l8 40h-40Z"/><circle cx="196" cy="34" r="11"/><path d="M184 47h24l8 40h-40Z"/></g></svg></div>
+      <div class="info"><h5>角色设定</h5><p>生成三视图，锁定全剧一致形象</p></div>
+    </div>
+    <div class="tpl">
+      <div class="cover"><svg viewBox="0 0 280 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="tp3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f2b33"/><stop offset="1" stop-color="#1c4a4a"/></linearGradient></defs><rect width="280" height="100" fill="url(#tp3)"/><circle cx="140" cy="50" r="26" fill="none" stroke="#7fd4d0" stroke-width="2" opacity=".8"/><path d="M132 38v24l20-12Z" fill="#7fd4d0"/><circle cx="140" cy="50" r="38" fill="none" stroke="#7fd4d0" stroke-width="1" opacity=".3"/></svg></div>
+      <div class="info"><h5>产品宣传片</h5><p>一句话生成 30 秒产品短片</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="projects" style="margin-top:32px">
+  <div class="projHead">
+    <h3>项目列表</h3>
+    <div class="ops">
+      <span class="outlineBtn" style="padding:7px 13px"><svg class="icon sm"><use href="#i-folder"/></svg>导入项目</span>
+      <span class="outlineBtn" style="padding:7px 13px"><svg class="icon sm"><use href="#i-plus"/></svg>添加项目</span>
+      <span class="iconBtn" style="width:30px;height:30px"><svg class="icon sm"><use href="#i-sort"/></svg></span>
+      <span class="viewSwitch"><span class="active"><svg class="icon sm"><use href="#i-grid"/></svg></span><span><svg class="icon sm"><use href="#i-list"/></svg></span></span>
+    </div>
+  </div>
+  <div class="projGrid">
+    <div class="projCard">
+      <div class="cover"><svg viewBox="0 0 260 100" preserveAspectRatio="xMidYMid slice"><rect width="260" height="100" fill="#0b1a30"/><rect x="26" y="18" width="46" height="66" fill="#0e243d"/><rect x="182" y="10" width="52" height="74" fill="#0e243d"/><rect x="34" y="32" width="7" height="26" fill="#e56ba0" opacity=".85"/><rect x="190" y="24" width="26" height="6" fill="#59d6c4" opacity=".85"/><g stroke="#a9c8ea" stroke-width="1" opacity=".3"><path d="M92 4 84 32"/><path d="M120 10 112 38"/><path d="M150 2 142 30"/><path d="M104 48 96 76"/><path d="M136 54 128 82"/></g><g fill="#04070d"><path d="M112 62q18-18 36 0Z"/><circle cx="130" cy="70" r="5"/><path d="M124 76h12l4 18h-20Z"/></g><rect y="82" width="260" height="18" fill="#060d18"/></svg></div>
+      <div class="info">
+        <div class="name">雨夜恋人 · 第 1 集<svg class="icon sm" style="margin-left:auto;color:var(--text3)"><use href="#i-more"/></svg></div>
+        <div class="path">C:\Users\c1338\Desktop\MyWorkplace\localMediaTest</div>
+        <div class="time">最近打开 2026/11/25 16:49</div>
+      </div>
+    </div>
+    <div class="projCard">
+      <div class="cover"><svg viewBox="0 0 260 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="pc2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a2450"/><stop offset="1" stop-color="#c97a4a"/></linearGradient></defs><rect width="260" height="100" fill="url(#pc2)"/><g fill="#150d20"><circle cx="96" cy="34" r="11"/><path d="M84 47h24l8 40H76Z"/><circle cx="142" cy="34" r="11"/><path d="M130 47h24l8 40h-40Z"/><circle cx="188" cy="34" r="11"/><path d="M176 47h24l8 40h-40Z"/></g></svg></div>
+      <div class="info">
+        <div class="name">都市奇幻 · 设定集<svg class="icon sm" style="margin-left:auto;color:var(--text3)"><use href="#i-more"/></svg></div>
+        <div class="path">D:\toonflow\projects\city-fantasy</div>
+        <div class="time">最近打开 2026/11/24 21:03</div>
+      </div>
+    </div>
+    <div class="projCard">
+      <div class="cover"><svg viewBox="0 0 260 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="pc3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f2b33"/><stop offset="1" stop-color="#1c4a4a"/></linearGradient></defs><rect width="260" height="100" fill="url(#pc3)"/><circle cx="130" cy="48" r="24" fill="none" stroke="#7fd4d0" stroke-width="2" opacity=".8"/><path d="M123 37v22l18-11Z" fill="#7fd4d0"/><circle cx="130" cy="48" r="36" fill="none" stroke="#7fd4d0" opacity=".25"/></svg></div>
+      <div class="info">
+        <div class="name">产品宣传片 · V2<svg class="icon sm" style="margin-left:auto;color:var(--text3)"><use href="#i-more"/></svg></div>
+        <div class="path">D:\toonflow\projects\product-intro</div>
+        <div class="time">最近打开 2026/11/22 10:37</div>
+      </div>
+    </div>
+    <div class="projCard">
+      <div class="cover"><svg viewBox="0 0 260 100" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="pc4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#141c3f"/><stop offset="1" stop-color="#4a2c66"/></linearGradient></defs><rect width="260" height="100" fill="url(#pc4)"/><circle cx="182" cy="30" r="26" fill="#6e9eff" opacity=".35"/><rect x="26" y="46" width="90" height="9" rx="3" fill="#e6e9f2" opacity=".85"/><rect x="26" y="64" width="56" height="7" rx="3" fill="#e6e9f2" opacity=".4"/></svg></div>
+      <div class="info">
+        <div class="name">短剧 · 未命名<svg class="icon sm" style="margin-left:auto;color:var(--text3)"><use href="#i-more"/></svg></div>
+        <div class="path">D:\toonflow\projects\untitled</div>
+        <div class="time">最近打开 2026/11/19 09:12</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="homeFoot"><svg class="icon sm"><use href="#i-lock"/></svg>画布与素材保存在本地工作目录 · 无需账号即可开始</div>
+<script>
+document.querySelectorAll('svg use').forEach(u => {
+  const sym = document.querySelector(u.getAttribute('href'));
+  if (!sym) return;
+  const host = u.ownerSVGElement;
+  host.setAttribute('viewBox', sym.getAttribute('viewBox') || '0 0 24 24');
+  host.setAttribute('fill', 'none');
+  host.setAttribute('stroke', 'currentColor');
+  host.setAttribute('stroke-width', '1.6');
+  host.setAttribute('stroke-linecap', 'round');
+  host.setAttribute('stroke-linejoin', 'round');
+  host.innerHTML = sym.innerHTML;
+});
+</script>
+</body>
+</html>
